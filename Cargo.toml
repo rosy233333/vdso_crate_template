@@ -1,0 +1,12 @@
+[workspace]
+resolver = "2"
+members = ["api", "config", "structs", "vdso"]
+
+[workspace.package]
+name = "vdso_crate_template"
+version = "0.1.0"
+edition = "2024"
+
+[workspace.dependencies]
+structs = { path = "structs" }
+config = { path = "config" }

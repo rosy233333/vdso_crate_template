@@ -1,0 +1,13 @@
+[package]
+name = "vdso"
+version.workspace = true
+edition.workspace = true
+
+[lib]
+crate-type = ["cdylib"]
+
+[dependencies]
+structs = { workspace = true }
+config = { workspace = true }
+hal = { git = "https://github.com/AsyncModules/vsched.git" }
+lazyinit = { git = "https://github.com/arceos-org/lazyinit.git" }

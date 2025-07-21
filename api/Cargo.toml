@@ -1,0 +1,11 @@
+[package]
+name = "api"
+version.workspace = true
+edition.workspace = true
+
+[dependencies]
+xmas-elf = "0.9.0"
+structs = { workspace = true }
+
+[build-dependencies]
+regex = "1.8.5"
