@@ -1,6 +1,6 @@
 [workspace]
 resolver = "2"
-members = ["api", "config", "structs", "vdso"]
+members = ["api", "config", "structs", "user_test", "vdso"]
 
 [workspace.package]
 name = "vdso_crate_template"
@@ -10,3 +10,10 @@ edition = "2024"
 [workspace.dependencies]
 structs = { path = "structs" }
 config = { path = "config" }
+api = { path = "api" }
+
+[profile.dev]
+panic = "abort"
+
+[profile.release]
+panic = "abort"

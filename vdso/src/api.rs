@@ -1,6 +1,8 @@
 use core::mem::MaybeUninit;
+use core::sync::atomic::Ordering;
 
-use structs::VvarData;
+use structs::argument::*;
+use structs::shared::*;
 
 use crate::{VVAR_DATA, get_data_base};
 
@@ -11,11 +13,13 @@ pub extern "C" fn init() {
         data_base.write(MaybeUninit::new(VvarData::new()));
     }
 
-    VVAR_DATA.init_once(unsafe { &mut *(data_base as *mut VvarData) });
+    VVAR_DATA.store(data_base as *mut VvarData, Ordering::Release);
 }
 
 #[unsafe(no_mangle)]
-pub extern "C" fn api_example() -> usize {
-    let vvar_data = VVAR_DATA.get().expect("VvarData not initialized");
-    vvar_data.example.i
+pub extern "C" fn api_example() -> ArgumentExample {
+    let vvar_data = unsafe { &mut *VVAR_DATA.load(Ordering::Acquire) };
+    ArgumentExample {
+        i: vvar_data.example.i,
+    }
 }

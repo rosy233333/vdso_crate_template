@@ -1,3 +1,4 @@
+#[repr(C)]
 pub struct VvarData {
     pub example: SharedExample,
 }
@@ -10,6 +11,7 @@ impl VvarData {
     }
 }
 
+#[repr(C)]
 pub struct SharedExample {
     pub i: usize,
 }

@@ -2,8 +2,8 @@
 
 mod api;
 
-use lazyinit::LazyInit;
-use structs::VvarData;
+use core::sync::atomic::AtomicPtr;
+use structs::shared::VvarData;
 
 pub use api::*;
 
@@ -20,7 +20,7 @@ fn get_data_base() -> usize {
     (pc & config::DATA_SEC_MASK) - VSCHED_DATA_SIZE
 }
 
-static VVAR_DATA: LazyInit<&mut VvarData> = LazyInit::new();
+static VVAR_DATA: AtomicPtr<VvarData> = AtomicPtr::new(core::ptr::null_mut());
 
 #[cfg(all(target_os = "linux", not(test)))]
 mod lang_item {
