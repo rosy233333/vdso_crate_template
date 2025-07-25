@@ -1,6 +1,5 @@
 # Copied and modified from https://github.com/AsyncModules/vsched/blob/e19b572714a6931972f1428e42d43cc34bcf47f2/Makefile
 ARCH ?= x86_64
-SMP ?= 1
 MODE ?= release
 V ?=
 PLATFORM ?=
