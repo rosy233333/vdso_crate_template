@@ -26,7 +26,7 @@
 
 mod api;
 
-use core::sync::atomic::AtomicPtr;
+use core::{mem::MaybeUninit, sync::atomic::AtomicPtr};
 use structs::shared::VvarData;
 
 pub use api::*;
@@ -44,7 +44,18 @@ fn get_data_base() -> usize {
     (pc & config::DATA_SEC_MASK) - VSCHED_DATA_SIZE
 }
 
-static VVAR_DATA: AtomicPtr<VvarData> = AtomicPtr::new(core::ptr::null_mut());
+fn init_vvar_data() {
+    let data_base = get_data_base() as *mut MaybeUninit<VvarData>;
+    unsafe {
+        data_base.write(MaybeUninit::new(VvarData::new()));
+    }
+}
+
+/// SAFETY: 必须在init_vvar_data后调用，也就是只能在api中init以外的函数中使用。
+unsafe fn get_vvar_data() -> &'static mut VvarData {
+    let data_base = get_data_base() as *mut MaybeUninit<VvarData>;
+    (*data_base).assume_init_mut()
+}
 
 #[cfg(all(target_os = "linux", not(test)))]
 mod lang_item {

@@ -5,7 +5,7 @@ members = ["api", "config", "structs", "user_test", "vdso"]
 [workspace.package]
 name = "vdso_crate_template"
 version = "0.1.0"
-edition = "2024"
+edition = "2021"
 
 [workspace.dependencies]
 structs = { path = "structs" }

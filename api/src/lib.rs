@@ -22,6 +22,9 @@
 
 #[rustfmt::skip]
 mod apis {
+    use structs::shared::VvarData;
+    pub const VVAR_DATA_SIZE: usize = core::mem::size_of::<VvarData>();
+
     include!(concat!(env!("OUT_DIR"), "/api.rs"));
 }
 
