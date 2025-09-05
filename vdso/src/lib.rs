@@ -26,7 +26,10 @@
 
 mod api;
 
-use core::{mem::MaybeUninit, sync::atomic::AtomicPtr};
+use core::{
+    mem::MaybeUninit,
+    sync::atomic::{AtomicPtr, AtomicUsize},
+};
 use structs::shared::VvarData;
 
 pub use api::*;
@@ -56,6 +59,8 @@ unsafe fn get_vvar_data() -> &'static mut VvarData {
     let data_base = get_data_base() as *mut MaybeUninit<VvarData>;
     (*data_base).assume_init_mut()
 }
+
+static PRIVATE_DATA_EXAMPLE: AtomicUsize = AtomicUsize::new(0);
 
 #[cfg(all(target_os = "linux", not(test)))]
 mod lang_item {

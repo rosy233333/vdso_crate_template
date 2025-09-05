@@ -8,10 +8,10 @@ fn main() {
     log::info!("Starting VDSO test...");
     let map = map_vdso().expect("Failed to map VDSO");
     init();
-    let example: ArgumentExample = get_example();
+    let example: ArgumentExample = get_shared();
     assert!(
         example.i == 42,
-        "Expected get_example() to return 42, got {}",
+        "Expected get_shared() to return 42, got {}",
         example.i
     );
     println!("Test passed!");
