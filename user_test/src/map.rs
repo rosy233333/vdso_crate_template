@@ -100,7 +100,7 @@ pub fn map_vdso() -> Result<MmapMut, ()> {
             dst,
             count
         );
-        unsafe { core::ptr::copy_nonoverlapping(src.to_ne_bytes().as_ptr(), dst as *mut u8, count) }
+        // unsafe { core::ptr::copy_nonoverlapping(src.to_ne_bytes().as_ptr(), dst as *mut u8, count) }
     }
 
     unsafe { api::init_vdso_vtable(elf_base_addr.unwrap() as _, &vdso_elf) };

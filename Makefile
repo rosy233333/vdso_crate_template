@@ -12,7 +12,7 @@ UTEST_BIN ?= $(TARGET_DIR)/$(TARGET)/$(MODE)/$(UTEST)
 LOG ?= error
 
 OBJDUMP = rust-objdump -t -T -r -R -d --print-imm-hex --x86-asm-syntax=intel
-OBJCOPY = rust-objcopy -X -g
+OBJCOPY = rust-objcopy -X
 
 # Target
 ifeq ($(ARCH), x86_64)

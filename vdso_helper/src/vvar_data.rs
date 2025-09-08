@@ -28,7 +28,7 @@ macro_rules! vvar_data {
 ///
 /// SAFETY：
 ///
-/// 需要在生成的so文件中检查，函数get_code_base是否位于代码段的第一页中。
+/// 需要在生成的so文件中检查，函数get_code_base的偏移量要小于一页。
 ///
 /// 否则，该宏获取到的引用地址会不正确。
 #[macro_export]
@@ -47,11 +47,6 @@ macro_rules! get_vvar_data {
     }};
 }
 
-/// Safety:
-///     the offset of this function in the `.text`
-///     section must be little than `page_size`.
-///     The `#[inline(never)]` attribute and the
-///     offset requirement can make it work ok.
 #[inline(never)]
 #[no_mangle]
 pub fn get_code_base(page_size: usize) -> usize {

@@ -5,3 +5,4 @@ edition.workspace = true
 
 [dependencies]
 vdso_helper = { workspace = true }
+hal = { git = "https://github.com/AsyncModules/vsched.git" }
