@@ -10,3 +10,4 @@ crate-type = ["cdylib"]
 structs = { workspace = true }
 config = { workspace = true }
 hal = { git = "https://github.com/AsyncModules/vsched.git" }
+vdso_helper = { workspace = true }

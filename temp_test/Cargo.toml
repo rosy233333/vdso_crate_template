@@ -1,0 +1,7 @@
+[package]
+name = "temp_test"
+version.workspace = true
+edition.workspace = true
+
+[dependencies]
+vdso_helper = { workspace = true }

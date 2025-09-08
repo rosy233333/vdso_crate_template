@@ -356,6 +356,13 @@ dependencies = [
 ]
 
 [[package]]
+name = "temp_test"
+version = "0.1.0"
+dependencies = [
+ "vdso_helper",
+]
+
+[[package]]
 name = "termcolor"
 version = "1.4.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -405,6 +412,14 @@ dependencies = [
  "config",
  "hal",
  "structs",
+ "vdso_helper",
+]
+
+[[package]]
+name = "vdso_helper"
+version = "0.1.0"
+dependencies = [
+ "hal",
 ]
 
 [[package]]

@@ -1,0 +1,7 @@
+[package]
+name = "vdso_helper"
+version.workspace = true
+edition.workspace = true
+
+[dependencies]
+hal = { git = "https://github.com/AsyncModules/vsched.git" }

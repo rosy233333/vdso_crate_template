@@ -7,7 +7,7 @@ fn main() {
     env_logger::init();
     log::info!("Starting VDSO test...");
     let map = map_vdso().expect("Failed to map VDSO");
-    init();
+    // init();
     let example: ArgumentExample = get_shared();
     assert!(
         example.i == 42,
