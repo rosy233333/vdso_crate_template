@@ -30,7 +30,7 @@ use core::{
     mem::MaybeUninit,
     sync::atomic::{AtomicPtr, AtomicUsize},
 };
-use vdso_helper::*;
+use vdso_helper::vvar_data;
 
 pub use api::*;
 

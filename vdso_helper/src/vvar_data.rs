@@ -35,13 +35,13 @@ macro_rules! vvar_data {
 macro_rules! get_vvar_data {
     ($i:ident, $e:expr) => {{
         let vvar_size = (core::mem::size_of::<crate::VvarData>() + ($e - 1)) & !($e - 1);
-        let data_base = $crate::get_code_base($e) - vvar_size;
+        let data_base = $crate::vvar_data::get_code_base($e) - vvar_size;
         let vvar_data_ref = unsafe { &*(data_base as *const crate::VvarData) };
         &(vvar_data_ref.$i)
     }};
     ($i:ident) => {{
         let vvar_size = (core::mem::size_of::<crate::VvarData>() + (0x1000 - 1)) & !(0x1000 - 1);
-        let data_base = $crate::get_code_base(0x1000) - vvar_size;
+        let data_base = $crate::vvar_data::get_code_base(0x1000) - vvar_size;
         let vvar_data_ref = unsafe { &*(data_base as *const crate::VvarData) };
         &(vvar_data_ref.$i)
     }};

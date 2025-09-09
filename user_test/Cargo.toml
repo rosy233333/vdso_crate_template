@@ -8,7 +8,7 @@ memmap2 = "0.9.5"
 log = "0.4"
 env_logger = "0.9"
 xmas-elf = "0.9.0"
-elf_parser = { git = "https://github.com/Starry-OS/elf_parser.git" }
+elf_parser = { path = "../../async-os/crates/elf_parser" }
 libc = "0.2"
 page_table_entry = { git = "https://github.com/Starry-OS/page_table_entry.git" }
 api = { workspace = true, features = ["log"] }

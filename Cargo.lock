@@ -95,7 +95,6 @@ checksum = "790eea4361631c5e7d22598ecd5723ff611904e3344ce8720784c93e3d83d40b"
 [[package]]
 name = "elf_parser"
 version = "0.1.0"
-source = "git+https://github.com/Starry-OS/elf_parser.git#061cec5c6fdcab5deeca938fc2f6966e07c9aa37"
 dependencies = [
  "axerrno",
  "cfg-if",

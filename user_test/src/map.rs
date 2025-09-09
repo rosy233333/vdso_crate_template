@@ -33,6 +33,8 @@ pub fn map_vdso() -> Result<MmapMut, ()> {
             return Err(());
         }
     };
+    let vvar = vdso_map.as_ptr() as *const u8 as *mut u8 as *mut () as *mut VvarData;
+    unsafe { vvar.write(VvarData::new()) };
 
     let vdso_so = &mut vdso_map[VVAR_SIZE..];
     #[allow(const_item_mutation)]

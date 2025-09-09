@@ -1,4 +1,3 @@
 #![no_std]
 
-mod vvar_data;
-pub use vvar_data::*;
+pub mod vvar_data;
