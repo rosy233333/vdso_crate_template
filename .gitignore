@@ -1,3 +1,4 @@
 /target
 *.log
 *.so
+*.s
