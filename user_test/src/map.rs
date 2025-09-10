@@ -1,4 +1,5 @@
 // Copied and modified from https://github.com/AsyncModules/vsched/blob/e19b572714a6931972f1428e42d43cc34bcf47f2/user_test/src/vsched.rs
+use include_bytes_aligned::include_bytes_aligned;
 use memmap2::MmapMut;
 use page_table_entry::MappingFlags;
 use std::io::Read;
@@ -8,8 +9,10 @@ use xmas_elf::program::SegmentData;
 
 const VVAR_SIZE: usize =
     (core::mem::size_of::<VvarData>() + config::PAGES_SIZE_4K - 1) & (!(config::PAGES_SIZE_4K - 1));
-const VDSO: &[u8] = core::include_bytes!("../../libvdsoexample.so");
-const VDSO_SIZE: usize = (VDSO.len() + config::PAGES_SIZE_4K - 1) & (!(config::PAGES_SIZE_4K - 1));
+const VDSO: &[u8] = include_bytes_aligned!(8, "../../libvdsoexample.so");
+const VDSO_SIZE: usize = ((VDSO.len() + config::PAGES_SIZE_4K - 1)
+    & (!(config::PAGES_SIZE_4K - 1)))
+    + config::PAGES_SIZE_4K; // 额外加了一页，用于bss段等未出现在文件中的段
 
 pub fn map_vdso() -> Result<MmapMut, ()> {
     let mut vdso_map = MmapMut::map_anon(VVAR_SIZE + VDSO_SIZE).unwrap();
@@ -105,7 +108,7 @@ pub fn map_vdso() -> Result<MmapMut, ()> {
         unsafe { core::ptr::copy_nonoverlapping(src.to_ne_bytes().as_ptr(), dst as *mut u8, count) }
     }
 
-    unsafe { api::init_vdso_vtable(elf_base_addr.unwrap() as _, &vdso_elf) };
+    unsafe { api::init_vdso_vtable(elf_base_addr.unwrap() as _) };
 
     Ok(vdso_map)
 }
