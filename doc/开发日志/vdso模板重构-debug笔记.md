@@ -24,6 +24,6 @@ section .rela.dyn LMA overlaps section .data LMA
 
 通过`riscv64-unknown-elf-objdump -s -d libvdsoexample.so > disasm.s`反编译so文件，并与用户态测试中的CPU log`qemu.log`、内核态测试中Trapframe中的`ra`比较，得知了出错代码附近的指令执行流程：
 
-代码首先想调用`get_code_base`函数，其先查询`.got.plt`表，再调用动态链接器重定位`get_code_base`，最后跳转到GOT表（在我们的链接脚本中，放在了`.data`段中），获得`get_code_base`的实际地址。然而，由于我们的加载流程中，只在加载时进行了重定位，而没有提供运行时重定位的支持，因此其获得的`get_code_base`的地址仍是定位前的地址，导致了错误。
+代码首先想调用`get_code_base`函数，其先查询`.got.plt`表，再调用动态链接器重定位`get_code_base`，最后跳转到GOT表（在我们的链接脚本中，放在了`.data`段中），获得`get_code_base`的实际地址。然而，由于我们的加载流程中，只在加载时进行了重定位，而没有提供运行时重定位的支持，因此其获得的`get_code_base`的地址仍是定位前的地址，导致了错误。（这一段流程可见[链接、装载与库/动态链接/延迟绑定](https://github.com/rosy233333/weekly-progress/blob/master/25.3.13~25.3.19/%E3%80%8A%E7%A8%8B%E5%BA%8F%E5%91%98%E7%9A%84%E8%87%AA%E6%88%91%E4%BF%AE%E5%85%BB--%E9%93%BE%E6%8E%A5%E3%80%81%E8%A3%85%E8%BD%BD%E4%B8%8E%E5%BA%93%E3%80%8B%E9%98%85%E8%AF%BB%E7%AC%94%E8%AE%B0.md#%E5%BB%B6%E8%BF%9F%E7%BB%91%E5%AE%9Aplt)）
 
 进一步发现，导致了该错误的`get_code_base`的重定位项，类型为`R_RISCV_JUMP_SLOT`。在RISC-V文档和`elf-parser`的实现中，对该重定位项的处理都是保持不动，等到运行时再调用动态链接器进行重定位。因为我们没有运行时重定位的支持，因此我将`elf-parser`对该类重定位项的处理改为了在加载时重定位（也就是，加上了加载基址）。经过这样的处理后，就可以正常运行了。
