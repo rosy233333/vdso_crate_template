@@ -1,11 +1,14 @@
 // Copied and modified from https://github.com/AsyncModules/vsched/blob/e19b572714a6931972f1428e42d43cc34bcf47f2/vsched_apis/build.rs
+use include_bytes_aligned::include_bytes_aligned;
 use std::{
     fs,
     io::Write,
     path::{Path, PathBuf},
 };
+use xmas_elf::symbol_table::Entry;
 
 const VDSO_API_PATH: &str = "../vdso/src/api.rs";
+static SO_CONTENT: &[u8] = include_bytes_aligned!(8, "../libvdsoexample.so");
 
 fn main() {
     let out_dir = std::env::var("OUT_DIR").unwrap();
@@ -16,6 +19,13 @@ fn main() {
 
 fn build_vsched_api(out_path: PathBuf) {
     let vsched_api_file_content = fs::read_to_string(VDSO_API_PATH).unwrap();
+    println!("cargo:warning=so_len={}", SO_CONTENT.len());
+    println!(
+        "cargo:warning=so_start=0x{:x}",
+        SO_CONTENT.as_ptr() as usize
+    );
+    let vdso_elf = xmas_elf::ElfFile::new(SO_CONTENT).expect("Error parsing app ELF file.");
+
     let re = regex::Regex::new(
         r#"#\[unsafe\(no_mangle\)\]\npub extern \"C\" fn ([a-zA-Z0-9_]?.*)(\([a-zA-Z0-9_:]?.*\)[->]?.*) \{"#,
     )
@@ -45,27 +55,39 @@ fn build_vsched_api(out_path: PathBuf) {
     static_vdso_vtable_str.push_str("};\n");
 
     // 运行时初始化 vsched_table 的函数
+    let dyn_sym_table = vdso_elf.find_section_by_name(".dynsym").unwrap();
+    let dyn_sym_table = match dyn_sym_table.get_data(&vdso_elf) {
+        Ok(xmas_elf::sections::SectionData::DynSymbolTable64(dyn_sym_table)) => dyn_sym_table,
+        _ => panic!("Invalid data in .dynsym section"),
+    };
     let mut fn_init_vdso_vtable_str = INIT_VDSO_VTABLE_STR.to_string();
     for (name, args) in fns.iter() {
+        let mut sym_value: usize = 0;
+        for dynsym in dyn_sym_table {
+            let sym_name = dynsym.get_name(&vdso_elf).unwrap();
+            if sym_name == *name {
+                sym_value = dynsym.value() as usize;
+                break;
+            }
+        }
+        assert!(sym_value != 0, "Function {} not found in .dynsym", name);
+
         fn_init_vdso_vtable_str.push_str(&format!(
-            r#"            if name == "{}" {{
-                let fn_ptr = base + dynsym.value();
-                #[cfg(feature = "log")]
-                log::debug!("{{}}: 0x{{:x}}", name, fn_ptr);
-                let f: fn{} = unsafe {{ core::mem::transmute(fn_ptr) }};
-                unsafe {{ VDSO_VTABLE.{}  = Some(f); }}
-            }}
+            r#"    // {}:
+    let fn_ptr = base + 0x{:x};
+    #[cfg(feature = "log")]
+    log::debug!("{}: 0x{{:x}}", fn_ptr);
+    let f: fn{} = unsafe {{ core::mem::transmute(fn_ptr) }};
+    unsafe {{ VDSO_VTABLE.{}  = Some(f); }}
+
 "#,
-            name, args, name
+            name, sym_value, name, args, name
         ));
     }
     fn_init_vdso_vtable_str.push_str(
-        r#"        }
-    }
-}
+        r#"}
     "#,
     );
-    // println!("fn_init_vdso_vtable_str: {}", fn_init_vdso_vtable_str);
 
     // 构建给内核和用户运行时使用的接口
     let mut apis = vec![];
@@ -140,17 +162,8 @@ pub fn {}{} {{
 }
 
 const INIT_VDSO_VTABLE_STR: &str = r#"
-pub unsafe fn init_vdso_vtable(base: u64, vdso_elf: &ElfFile) {
-    if let Some(dyn_sym_table) = vdso_elf.find_section_by_name(".dynsym") {
-        let dyn_sym_table = match dyn_sym_table.get_data(&vdso_elf) {
-            Ok(xmas_elf::sections::SectionData::DynSymbolTable64(dyn_sym_table)) => dyn_sym_table,
-            _ => panic!("Invalid data in .dynsym section"),
-        };
-        for dynsym in dyn_sym_table {
-            let name = dynsym.get_name(&vdso_elf).unwrap();
+pub unsafe fn init_vdso_vtable(base: u64) {
 "#;
 
 const VDSO_SECTION: &str = r#"pub use structs::argument::*;
-use xmas_elf::symbol_table::Entry;
-use xmas_elf::ElfFile;
 "#;
