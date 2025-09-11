@@ -27,3 +27,14 @@ section .rela.dyn LMA overlaps section .data LMA
 代码首先想调用`get_code_base`函数，其先查询`.got.plt`表，再调用动态链接器重定位`get_code_base`，最后跳转到GOT表（在我们的链接脚本中，放在了`.data`段中），获得`get_code_base`的实际地址。然而，由于我们的加载流程中，只在加载时进行了重定位，而没有提供运行时重定位的支持，因此其获得的`get_code_base`的地址仍是定位前的地址，导致了错误。（这一段流程可见[链接、装载与库/动态链接/延迟绑定](https://github.com/rosy233333/weekly-progress/blob/master/25.3.13~25.3.19/%E3%80%8A%E7%A8%8B%E5%BA%8F%E5%91%98%E7%9A%84%E8%87%AA%E6%88%91%E4%BF%AE%E5%85%BB--%E9%93%BE%E6%8E%A5%E3%80%81%E8%A3%85%E8%BD%BD%E4%B8%8E%E5%BA%93%E3%80%8B%E9%98%85%E8%AF%BB%E7%AC%94%E8%AE%B0.md#%E5%BB%B6%E8%BF%9F%E7%BB%91%E5%AE%9Aplt)）
 
 进一步发现，导致了该错误的`get_code_base`的重定位项，类型为`R_RISCV_JUMP_SLOT`。在RISC-V文档和`elf-parser`的实现中，对该重定位项的处理都是保持不动，等到运行时再调用动态链接器进行重定位。因为我们没有运行时重定位的支持，因此我将`elf-parser`对该类重定位项的处理改为了在加载时重定位（也就是，加上了加载基址）。经过这样的处理后，就可以正常运行了。
+
+### 私有数据访问bug
+
+在这之后，遇到了调用`get_private_data`访问私有数据时报段错误的问题。
+
+因为发现私有数据设为0时出现问题，设为1时则没有问题，考虑到是`.bss`段出现了问题。`.bss`段不包含在文件中，导致SO文件的加载大小大于文件大小。但之前是按文件大小进行分配空间，因此`.bss`段超出了范围。增加分配的空间，直接多分配一页，解决了该问题。
+
+在解决该问题的过程中，还发现了已存在的其它问题：
+
+- Async-OS中的加载机制只是拷贝了SO文件，并没有按Segment加载。因此修改了Async-OS的加载机制。
+- 使用`include_bytes`加载SO文件时，可能出现不对齐的问题。因此改为了`include_bytes_aligned`库提供的`include_bytes_aligned`宏。
