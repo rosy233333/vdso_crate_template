@@ -8,7 +8,7 @@ use std::{
 use xmas_elf::symbol_table::Entry;
 
 const VDSO_API_PATH: &str = "../vdso/src/api.rs";
-static SO_CONTENT: &[u8] = include_bytes_aligned!(8, "../libvdsoexample.so");
+static SO_CONTENT: &[u8] = include_bytes_aligned!(8, "../user_test/libvdso.so");
 
 fn main() {
     let out_dir = std::env::var("OUT_DIR").unwrap();
@@ -19,11 +19,8 @@ fn main() {
 
 fn build_vsched_api(out_path: PathBuf) {
     let vsched_api_file_content = fs::read_to_string(VDSO_API_PATH).unwrap();
-    println!("cargo:warning=so_len={}", SO_CONTENT.len());
-    println!(
-        "cargo:warning=so_start=0x{:x}",
-        SO_CONTENT.as_ptr() as usize
-    );
+    println!("cargo:warning=so_len={:#x}", SO_CONTENT.len());
+    println!("cargo:warning=so_start={:#x}", SO_CONTENT.as_ptr() as usize);
     let vdso_elf = xmas_elf::ElfFile::new(SO_CONTENT).expect("Error parsing app ELF file.");
 
     let re = regex::Regex::new(

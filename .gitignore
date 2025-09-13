@@ -3,3 +3,7 @@
 *.so
 *.s
 output.map
+temp_test/target
+temp_test/vdso_linker.lds
+user_test/target
+user_test/vdso_linker.lds

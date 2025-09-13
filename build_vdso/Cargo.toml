@@ -1,7 +1,6 @@
 [package]
-name = "temp_test"
+name = "build_vdso"
 version.workspace = true
 edition.workspace = true
 
 [dependencies]
-build_vdso = { workspace = true }

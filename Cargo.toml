@@ -1,6 +1,15 @@
 [workspace]
 resolver = "2"
-members = ["api", "config", "structs", "temp_test", "user_test", "vdso", "vdso_helper"]
+members = [
+    "api",
+    "build_vdso",
+    "config",
+    "structs",
+    "temp_test",
+    "user_test",
+    "vdso",
+    "vdso_helper",
+]
 
 [workspace.package]
 name = "vdso_crate_template"
@@ -12,6 +21,7 @@ structs = { path = "structs" }
 config = { path = "config" }
 api = { path = "api" }
 vdso_helper = { path = "vdso_helper" }
+build_vdso = { path = "build_vdso" }
 
 [profile.dev]
 panic = "abort"
