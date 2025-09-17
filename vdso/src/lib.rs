@@ -34,37 +34,16 @@ use vdso_helper::vvar_data;
 
 pub use api::*;
 
-// /// Safety:
-// ///     the offset of this function in the `.text`
-// ///     section must be little than 0x1000.
-// ///     The `#[inline(never)]` attribute and the
-// ///     offset requirement can make it work ok.
-// #[inline(never)]
-// fn get_data_base() -> usize {
-//     let pc = unsafe { hal::asm::get_pc() };
-//     const VSCHED_DATA_SIZE: usize = (core::mem::size_of::<VvarData>() + config::PAGES_SIZE_4K - 1)
-//         & (!(config::PAGES_SIZE_4K - 1));
-//     (pc & config::DATA_SEC_MASK) - VSCHED_DATA_SIZE
-// }
-
-// fn init_vvar_data() {
-//     let data_base = get_data_base() as *mut MaybeUninit<VvarData>;
-//     unsafe {
-//         data_base.write(MaybeUninit::new(VvarData::new()));
-//     }
-// }
-
-// /// SAFETY: 必须在init_vvar_data后调用，也就是只能在api中init以外的函数中使用。
-// unsafe fn get_vvar_data() -> &'static mut VvarData {
-//     let data_base = get_data_base() as *mut MaybeUninit<VvarData>;
-//     (*data_base).assume_init_mut()
-// }
-
 vvar_data! {
     example: AtomicUsize
 }
 
 static PRIVATE_DATA_EXAMPLE: AtomicUsize = AtomicUsize::new(0);
+
+#[repr(C)]
+pub struct ArgumentExample {
+    pub i: usize,
+}
 
 #[cfg(all(target_os = "linux", not(test)))]
 mod lang_item {
@@ -73,3 +52,8 @@ mod lang_item {
         loop {}
     }
 }
+
+// #[panic_handler]
+// fn panic(_info: &core::panic::PanicInfo) -> ! {
+//     loop {}
+// }

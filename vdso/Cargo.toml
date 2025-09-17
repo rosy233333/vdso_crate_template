@@ -4,10 +4,7 @@ version.workspace = true
 edition.workspace = true
 
 [lib]
-crate-type = ["cdylib"]
+crate-type = ["lib", "cdylib"]
 
 [dependencies]
-structs = { workspace = true }
-config = { workspace = true }
-hal = { git = "https://github.com/AsyncModules/vsched.git" }
 vdso_helper = { workspace = true }

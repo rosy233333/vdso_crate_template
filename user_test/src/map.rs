@@ -2,21 +2,18 @@
 use include_bytes_aligned::include_bytes_aligned;
 use memmap2::MmapMut;
 use page_table_entry::MappingFlags;
-// use std::io::Read;
 use std::ptr::copy_nonoverlapping;
 use std::str::from_utf8;
-use structs::shared::VvarData;
+// use vdso::VvarData;
 use xmas_elf::program::SegmentData;
 
+const PAGES_SIZE_4K: usize = 0x1000;
+
 const VVAR_SIZE: usize =
-    (core::mem::size_of::<VvarData>() + config::PAGES_SIZE_4K - 1) & (!(config::PAGES_SIZE_4K - 1));
-// const VDSO: &[u8] = include_bytes_aligned!(8, "../../libvdsoexample.so");
-// const OUT_DIR: &str = env!("OUT_DIR");
-// const VDSO: &[u8] = include_bytes_aligned!(8, String::from(OUT_DIR) + "/libvdso.so");
+    (core::mem::size_of::<VvarData>() + PAGES_SIZE_4K - 1) & (!(PAGES_SIZE_4K - 1));
 const VDSO: &[u8] = include_bytes_aligned!(8, "../libvdso.so");
-const VDSO_SIZE: usize = ((VDSO.len() + config::PAGES_SIZE_4K - 1)
-    & (!(config::PAGES_SIZE_4K - 1)))
-    + config::PAGES_SIZE_4K; // 额外加了一页，用于bss段等未出现在文件中的段
+const VDSO_SIZE: usize =
+    ((VDSO.len() + PAGES_SIZE_4K - 1) & (!(PAGES_SIZE_4K - 1))) + PAGES_SIZE_4K; // 额外加了一页，用于bss段等未出现在文件中的段
 
 pub fn map_vdso() -> Result<MmapMut, ()> {
     let mut vdso_map = MmapMut::map_anon(VVAR_SIZE + VDSO_SIZE).unwrap();
@@ -41,7 +38,7 @@ pub fn map_vdso() -> Result<MmapMut, ()> {
         }
     };
     let vvar = vdso_map.as_ptr() as *const u8 as *mut u8 as *mut () as *mut VvarData;
-    unsafe { vvar.write(VvarData::new()) };
+    unsafe { vvar.write(VvarData::default()) };
 
     let vdso_so = &mut vdso_map[VVAR_SIZE..];
     // #[allow(const_item_mutation)]

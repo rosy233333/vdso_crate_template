@@ -80,6 +80,10 @@ checksum = "1b8e56985ec62d17e9c1001dc89c88ecd7dc08e47eba5ec7c29c7b5eeecde967"
 [[package]]
 name = "build_vdso"
 version = "0.1.0"
+dependencies = [
+ "regex",
+ "xmas-elf",
+]
 
 [[package]]
 name = "cfg-if"
@@ -405,7 +409,6 @@ version = "0.1.0"
 dependencies = [
  "api",
  "build_vdso",
- "config",
  "elf_parser",
  "env_logger",
  "include_bytes_aligned",
@@ -413,7 +416,7 @@ dependencies = [
  "log",
  "memmap2",
  "page_table_entry 0.1.0",
- "structs",
+ "vdso",
  "xmas-elf",
 ]
 
@@ -421,9 +424,6 @@ dependencies = [
 name = "vdso"
 version = "0.1.0"
 dependencies = [
- "config",
- "hal",
- "structs",
  "vdso_helper",
 ]
 

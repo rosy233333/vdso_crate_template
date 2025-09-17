@@ -8,12 +8,15 @@ pub struct BuildConfig {
     /// 编译输出目录，会输出链接脚本和最终的.so文件
     /// 若在build.rs中调用，则应传入环境变量OUT_DIR的值
     pub out_dir: String,
-    /// 生成的vdso库的soname
+    /// 生成的vdso库的soname，默认为"lib" + package_name
     pub so_name: String,
     /// 编译模式，"debug"或"release"
     pub mode: String,
     /// 冗长度，0表示不冗长，1表示冗长输出，2表示更冗长输出
     pub verbose: usize,
+    /// 生成的api库的名称，默认为"lib" + package_name
+    /// 该库会被拷贝到输出目录，并可被调用者依赖
+    pub api_lib_name: String,
 }
 
 impl BuildConfig {
@@ -25,6 +28,8 @@ impl BuildConfig {
     /// - so_name: "lib" + package_name
     /// - mode: "release"
     /// - verbose: 0
+    /// - api_lib_name: "lib" + package_name
+    /// 其他字段必须手动指定。
     pub fn new(src_dir: &str, package_name: &str) -> Self {
         Self {
             arch: "riscv64".to_string(),
@@ -34,6 +39,7 @@ impl BuildConfig {
             so_name: "lib".to_string() + package_name,
             mode: "release".to_string(),
             verbose: 0,
+            api_lib_name: "lib".to_string() + package_name,
         }
     }
 }

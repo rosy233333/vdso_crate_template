@@ -12,8 +12,9 @@ elf_parser = { path = "../../async-os/crates/elf_parser" }
 libc = "0.2"
 page_table_entry = { git = "https://github.com/Starry-OS/page_table_entry.git" }
 api = { workspace = true, features = ["log"] }
-structs = { workspace = true }
-config = { workspace = true }
+# structs = { workspace = true }
+# config = { workspace = true }
+vdso = { workspace = true }
 include_bytes_aligned = "0.1.4"
 
 [build-dependencies]

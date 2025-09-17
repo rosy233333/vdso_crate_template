@@ -22,6 +22,7 @@ config = { path = "config" }
 api = { path = "api" }
 vdso_helper = { path = "vdso_helper" }
 build_vdso = { path = "build_vdso" }
+vdso = { path = "vdso" }
 
 [profile.dev]
 panic = "abort"

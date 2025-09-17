@@ -8,6 +8,9 @@ use std::{
 pub mod build_config;
 pub use build_config::*;
 
+mod gen_api;
+use gen_api::gen_api;
+
 /// 构建vdso的代码。在vdso外部代码的build.rs中调用该函数。
 pub fn build_vdso(config: &BuildConfig) {
     // // 用于打印环境变量的测试代码。
@@ -25,8 +28,84 @@ pub fn build_vdso(config: &BuildConfig) {
     let linker_script = gen_linker_script(&config.arch);
     fs::write(&out_path, &linker_script).unwrap();
 
-    // 编译vdso库
-    let absolute_script_dir = fs::canonicalize(out_path).unwrap().display().to_string();
+    build_so(config);
+
+    gen_api(config);
+}
+
+/// 生成链接脚本的代码
+fn gen_linker_script(arch: &str) -> String {
+    // Copied and modified from https://github.com/AsyncModules/vsched/blob/e19b572714a6931972f1428e42d43cc34bcf47f2/vsched/build.rs
+    let arch_lds = match arch {
+        "riscv64" => "riscv",
+        "aarch64" => "aarch64",
+        "x86_64" => "i386:x86-64",
+        _ => panic!("Unsupported arch"),
+    };
+    let linker = format!(
+        r#"
+    OUTPUT_ARCH({})
+
+    SECTIONS {{
+        . = SIZEOF_HEADERS;
+
+        /* 先放置动态链接相关的只读段 */
+        .hash		: {{ *(.hash) }}
+    	.gnu.hash	: {{ *(.gnu.hash) }}
+    	.dynsym		: {{ *(.dynsym) }}
+    	.dynstr		: {{ *(.dynstr) }}
+    	.gnu.version	: {{ *(.gnu.version) }}
+    	.gnu.version_d	: {{ *(.gnu.version_d) }}
+    	.gnu.version_r	: {{ *(.gnu.version_r) }}
+
+        /* 动态段单独分配 */
+        .dynamic    : {{ *(.dynamic) }}
+
+        . = ALIGN(16);
+        /* 代码段（.text）需要放在只读数据段之前 */
+        .text       : {{
+            *(.text.start)
+            *(.text .text.*)
+        }}
+
+        . = ALIGN(4K);
+        /* 只读数据段（.rodata等） */
+        .rodata     : {{
+            *(.rodata .rodata.* .gnu.linkonce.r.*)
+            *(.note.*)
+        }}
+
+        . = ALIGN(4K);
+        .plt : {{ *(.plt .plt.*) }}
+
+        . = ALIGN(4K);
+        /* 数据段（.data、.bss等）单独分配 */
+        .data       : {{
+            *(.data .data.* .gnu.linkonce.d.*)
+            *(.got.plt) *(.got)
+        }}
+
+        . = ALIGN(4K);
+        .bss        : {{
+            *(.bss .bss.* .gnu.linkonce.b.*)
+            *(COMMON)
+        }}
+
+        .eh_frame_hdr	: {{ *(.eh_frame_hdr) }}
+    	.eh_frame	: {{ KEEP (*(.eh_frame)) }}
+    }}
+    "#,
+        arch_lds
+    );
+    linker
+}
+
+/// 编译vdso库为so文件，并拷贝到输出目录
+fn build_so(config: &BuildConfig) {
+    let absolute_script_dir = fs::canonicalize(Path::new(&config.out_dir).join("vdso_linker.lds"))
+        .unwrap()
+        .display()
+        .to_string();
     let rustflags = format!(
         "-C link-arg=-fpie -C link-arg=-soname={} -C link-arg=-T{}",
         &config.so_name, absolute_script_dir
@@ -132,71 +211,4 @@ pub fn build_vdso(config: &BuildConfig) {
     if !objcopy_output.status.success() {
         panic!("objcopy failed");
     }
-}
-
-/// 生成链接脚本的代码
-fn gen_linker_script(arch: &str) -> String {
-    // Copied and modified from https://github.com/AsyncModules/vsched/blob/e19b572714a6931972f1428e42d43cc34bcf47f2/vsched/build.rs
-    let arch_lds = match arch {
-        "riscv64" => "riscv",
-        "aarch64" => "aarch64",
-        "x86_64" => "i386:x86-64",
-        _ => panic!("Unsupported arch"),
-    };
-    let linker = format!(
-        r#"
-    OUTPUT_ARCH({})
-
-    SECTIONS {{
-        . = SIZEOF_HEADERS;
-
-        /* 先放置动态链接相关的只读段 */
-        .hash		: {{ *(.hash) }}
-    	.gnu.hash	: {{ *(.gnu.hash) }}
-    	.dynsym		: {{ *(.dynsym) }}
-    	.dynstr		: {{ *(.dynstr) }}
-    	.gnu.version	: {{ *(.gnu.version) }}
-    	.gnu.version_d	: {{ *(.gnu.version_d) }}
-    	.gnu.version_r	: {{ *(.gnu.version_r) }}
-
-        /* 动态段单独分配 */
-        .dynamic    : {{ *(.dynamic) }}
-
-        . = ALIGN(16);
-        /* 代码段（.text）需要放在只读数据段之前 */
-        .text       : {{
-            *(.text.start)
-            *(.text .text.*)
-        }}
-
-        . = ALIGN(4K);
-        /* 只读数据段（.rodata等） */
-        .rodata     : {{
-            *(.rodata .rodata.* .gnu.linkonce.r.*)
-            *(.note.*)
-        }}
-
-        . = ALIGN(4K);
-        .plt : {{ *(.plt .plt.*) }}
-
-        . = ALIGN(4K);
-        /* 数据段（.data、.bss等）单独分配 */
-        .data       : {{
-            *(.data .data.* .gnu.linkonce.d.*)
-            *(.got.plt) *(.got)
-        }}
-
-        . = ALIGN(4K);
-        .bss        : {{
-            *(.bss .bss.* .gnu.linkonce.b.*)
-            *(COMMON)
-        }}
-
-        .eh_frame_hdr	: {{ *(.eh_frame_hdr) }}
-    	.eh_frame	: {{ KEEP (*(.eh_frame)) }}
-    }}
-    "#,
-        arch_lds
-    );
-    linker
 }
