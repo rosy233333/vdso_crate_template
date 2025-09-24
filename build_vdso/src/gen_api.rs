@@ -13,39 +13,19 @@ pub(crate) fn gen_api(config: &BuildConfig) {
     fs::create_dir_all(&src_path).unwrap();
     let cargo_toml = cargo_toml_content(config);
     let lib_rs = lib_rs_content(config);
-    // let vvar_rs = vvar_rs_content(config);
     let api_rs = api_rs_content(config);
 
     fs::write(&lib_path.join("Cargo.toml"), cargo_toml).unwrap();
     fs::write(&src_path.join("lib.rs"), lib_rs).unwrap();
-    // fs::write(&src_path.join("vvar.rs"), vvar_rs).unwrap();
     fs::write(&src_path.join("api.rs"), api_rs).unwrap();
 }
 
 fn cargo_toml_content(config: &BuildConfig) -> String {
     let absolute_src_dir = fs::canonicalize(Path::new(&config.src_dir)).unwrap();
-    //     format!(
-    //         r#"[package]
-    // name = "{}"
-    // version = "0.1.0"
-    // edition = "2021"
-
-    // [dependencies]
-    // {} = {{ path = "{}" }}
-    // log = {{ version = "0.4", optional = true }}
-    // include_bytes_aligned = "0.1.4"
-
-    // [features]
-    // log = ["dep:log"]
-    // default = []
-    // "#,
-    //         config.api_lib_name,
-    //         config.package_name,
-    //         absolute_src_dir.display()
-    //     )
     format!(
         r#"[package]
 name = "{}"
+edition = "2021"
 
 [dependencies]
 {} = {{ path = "{}" }}
@@ -61,17 +41,7 @@ default = []
     )
 }
 
-fn lib_rs_content(config: &BuildConfig) -> String {
-    //     format!(
-    //         r#"#![no_std]
-    // use include_bytes_aligned::include_bytes_aligned;
-
-    // pub mod api;
-
-    // pub static SO_CONTENT: &[u8] = include_bytes_aligned!(8, "../../{}.so");
-    // "#,
-    //         config.so_name
-    //     )
+fn lib_rs_content(_config: &BuildConfig) -> String {
     String::from(
         r#"#![no_std]
 pub mod api;
@@ -79,27 +49,6 @@ pub use api::*;
 "#,
     )
 }
-
-// fn vvar_rs_content(config: &BuildConfig) -> String {
-//     let lib_rs_path = Path::new(&config.src_dir)
-//         .join("src")
-//         .join("lib")
-//         .with_extension("rs");
-//     let lib_rs_content = fs::read_to_string(&lib_rs_path).unwrap();
-
-//     let re = regex::Regex::new(r#"vvar_data! \{([[[:ascii:]]&&[^\{\}]]*)\}"#).unwrap();
-//     let [vvar_content] = re.captures(&lib_rs_content).unwrap().extract().1;
-
-//     let vvar_struct_str = format!(
-//         r#"#[derive(Default)]
-// #[repr(C)]
-// pub struct VvarData {{{}}}
-// "#,
-//         vvar_content
-//     );
-
-//     vvar_struct_str
-// }
 
 fn api_rs_content(config: &BuildConfig) -> String {
     // 修改自https://github.com/AsyncModules/vsched/blob/e728dadd75aeb8da5cec1642320a6bd24af5b5bb/vsched_apis/build.rs的build_vsched_api函数
@@ -126,8 +75,8 @@ fn api_rs_content(config: &BuildConfig) -> String {
         // println!("{}: {}", name, args);
         fns.push((name, args));
     }
-    // use vdso库中的数据结构
-    let use_vdso_str = format!(
+    // pub use vdso库中的内容
+    let pub_use_vdso_str = format!(
         "extern crate {};\npub use self::{}::*;\n\n",
         config.package_name, config.package_name
     );
@@ -227,7 +176,7 @@ pub fn {}{} {{
     // println!("apis: {:?}", apis);
 
     let mut api_content = String::new();
-    api_content.push_str(&use_vdso_str);
+    api_content.push_str(&pub_use_vdso_str);
     api_content.push_str(&vdso_vtable_struct_str);
     api_content.push_str(&static_vdso_vtable_str);
     api_content.push_str(&fn_init_vdso_vtable_str);

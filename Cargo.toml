@@ -1,23 +1,7 @@
 [workspace]
 resolver = "2"
-members = [
-    "api",
-    "build_vdso",
-    "config",
-    "structs",
-    "temp_test",
-    "user_test",
-    "vdso",
-    "vdso_helper",
-]
-exclude = [
-    "user_test/libvdso",
-    "user_test/vdso_wrapper",
-    "temp_test/libvdso",
-    "temp_test/vdso_wrapper",
-    "output/libvdso",
-    "output/vdso_wrapper",
-]
+members = ["build_vdso", "temp_test", "user_test", "vdso", "vdso_helper"]
+exclude = ["output/libvdso", "output/vdso_wrapper"]
 
 [workspace.package]
 name = "vdso_crate_template"
@@ -25,9 +9,6 @@ version = "0.1.0"
 edition = "2021"
 
 [workspace.dependencies]
-structs = { path = "structs" }
-config = { path = "config" }
-api = { path = "api" }
 vdso_helper = { path = "vdso_helper" }
 build_vdso = { path = "build_vdso" }
 vdso = { path = "vdso" }

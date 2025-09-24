@@ -1,9 +1,7 @@
 use core::mem::MaybeUninit;
 use core::sync::atomic::Ordering;
 
-// use structs::argument::*;
 use vdso_helper::get_vvar_data;
-// use structs::shared::*;
 
 use crate::{ArgumentExample, PRIVATE_DATA_EXAMPLE};
 
