@@ -10,6 +10,14 @@ members = [
     "vdso",
     "vdso_helper",
 ]
+exclude = [
+    "user_test/libvdso",
+    "user_test/vdso_wrapper",
+    "temp_test/libvdso",
+    "temp_test/vdso_wrapper",
+    "output/libvdso",
+    "output/vdso_wrapper",
+]
 
 [workspace.package]
 name = "vdso_crate_template"

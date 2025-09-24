@@ -44,16 +44,3 @@ static PRIVATE_DATA_EXAMPLE: AtomicUsize = AtomicUsize::new(0);
 pub struct ArgumentExample {
     pub i: usize,
 }
-
-#[cfg(all(target_os = "linux", not(test)))]
-mod lang_item {
-    #[panic_handler]
-    fn panic(_info: &core::panic::PanicInfo) -> ! {
-        loop {}
-    }
-}
-
-// #[panic_handler]
-// fn panic(_info: &core::panic::PanicInfo) -> ! {
-//     loop {}
-// }

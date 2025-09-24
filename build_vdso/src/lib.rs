@@ -11,6 +11,9 @@ pub use build_config::*;
 mod gen_api;
 use gen_api::gen_api;
 
+mod gen_wrapper;
+use gen_wrapper::gen_wrapper;
+
 /// 构建vdso的代码。在vdso外部代码的build.rs中调用该函数。
 pub fn build_vdso(config: &BuildConfig) {
     // // 用于打印环境变量的测试代码。
@@ -27,6 +30,9 @@ pub fn build_vdso(config: &BuildConfig) {
     let out_path = Path::new(&config.out_dir).join("vdso_linker.lds");
     let linker_script = gen_linker_script(&config.arch);
     fs::write(&out_path, &linker_script).unwrap();
+
+    // 生成wrapper cdylib
+    gen_wrapper(config);
 
     build_so(config);
 
@@ -160,8 +166,12 @@ fn build_so(config: &BuildConfig) {
             if vdso_value == value {
                 vdso_value = value.replace("crt-static,", "")
             }
-            assert!(vdso_value != value);
-            cargo.env("CARGO_CFG_TARGET_FEATURE", vdso_value);
+            if vdso_value == value {
+                // 说明该变量只指定了crt-static一项
+                cargo.env_remove("CARGO_CFG_TARGET_FEATURE");
+            } else {
+                cargo.env("CARGO_CFG_TARGET_FEATURE", vdso_value);
+            }
         }
     }
     if let Ok(value) = env::var("CARGO_ENCODED_RUSTFLAGS") {
@@ -170,8 +180,9 @@ fn build_so(config: &BuildConfig) {
             cargo.env("CARGO_ENCODED_RUSTFLAGS", vdso_value);
         }
     }
+    let wrapper_dir = Path::new(&config.out_dir).join("vdso_wrapper");
     cargo
-        .current_dir(&config.src_dir)
+        .current_dir(&wrapper_dir)
         .env("ARCH", &config.arch)
         .env("RUSTFLAGS", rustflags)
         .args(cargo_args);
@@ -187,11 +198,11 @@ fn build_so(config: &BuildConfig) {
     }
 
     let mut objcopy = Command::new("rust-objcopy");
-    let src_filename = String::from("lib") + &config.package_name;
+    // let src_filename = String::from("lib") + &config.package_name;
     let src_file = Path::new(&absolute_build_target_dir)
         .join(build_target)
         .join(&config.mode)
-        .join(&src_filename)
+        .join("libvdso_wrapper")
         .with_extension("so")
         .display()
         .to_string();

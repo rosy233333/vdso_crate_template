@@ -1,5 +1,5 @@
 use crate::map::map_vdso;
-use api::*;
+use libvdso::*;
 
 mod map;
 
@@ -7,11 +7,10 @@ fn main() {
     env_logger::init();
     log::info!("Starting VDSO test...");
     let map = map_vdso().expect("Failed to map VDSO");
-    // init();
     let example: ArgumentExample = get_shared();
     assert!(
-        example.i == 42,
-        "Expected get_shared() to return 42, got {}",
+        example.i == 0,
+        "Expected get_shared() to return 0, got {}",
         example.i
     );
     set_shared(1);

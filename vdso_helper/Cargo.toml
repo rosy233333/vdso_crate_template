@@ -4,4 +4,4 @@ version.workspace = true
 edition.workspace = true
 
 [dependencies]
-hal = { git = "https://github.com/AsyncModules/vsched.git" }
+hal = { git = "https://github.com/AsyncModules/vsched.git", rev = "0351acf" }

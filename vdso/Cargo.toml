@@ -3,8 +3,5 @@ name = "vdso"
 version.workspace = true
 edition.workspace = true
 
-[lib]
-crate-type = ["lib", "cdylib"]
-
 [dependencies]
 vdso_helper = { workspace = true }

@@ -135,7 +135,7 @@ dependencies = [
 [[package]]
 name = "hal"
 version = "0.0.0"
-source = "git+https://github.com/AsyncModules/vsched.git#dbc39218bf778164c631b37d67e3cb61e3cfddd9"
+source = "git+https://github.com/AsyncModules/vsched.git?rev=0351acf#0351acfb128ab0399e21f09fc6d2eb506ac97fa5"
 dependencies = [
  "aarch64-cpu 10.0.0",
  "cfg-if",
@@ -174,6 +174,13 @@ name = "libc"
 version = "0.2.174"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "1171693293099992e19cddea4e8b849964e9846f4acee11b3948bcc337be8776"
+
+[[package]]
+name = "libvdso"
+version = "0.0.0"
+dependencies = [
+ "vdso",
+]
 
 [[package]]
 name = "linkme"
@@ -374,6 +381,7 @@ name = "temp_test"
 version = "0.1.0"
 dependencies = [
  "build_vdso",
+ "vdso",
 ]
 
 [[package]]
@@ -407,16 +415,15 @@ checksum = "5a5f39404a5da50712a4c1eecf25e90dd62b613502b7e925fd4e4d19b5c96512"
 name = "user_test"
 version = "0.1.0"
 dependencies = [
- "api",
  "build_vdso",
  "elf_parser",
  "env_logger",
  "include_bytes_aligned",
  "libc",
+ "libvdso",
  "log",
  "memmap2",
  "page_table_entry 0.1.0",
- "vdso",
  "xmas-elf",
 ]
 

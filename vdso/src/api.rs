@@ -7,13 +7,6 @@ use vdso_helper::get_vvar_data;
 
 use crate::{ArgumentExample, PRIVATE_DATA_EXAMPLE};
 
-// /// 初始化vDSO。
-// /// 若vDSO在多个地址空间中共享，则只需调用一次。
-// #[unsafe(no_mangle)]
-// pub extern "C" fn init() {
-//     init_vvar_data();
-// }
-
 #[unsafe(no_mangle)]
 pub extern "C" fn get_shared() -> ArgumentExample {
     ArgumentExample {
