@@ -1,6 +1,6 @@
 // Copied and modified from https://github.com/AsyncModules/vsched/blob/e19b572714a6931972f1428e42d43cc34bcf47f2/user_test/src/vsched.rs
 use include_bytes_aligned::include_bytes_aligned;
-use libvdso::VvarData;
+use libvdsoexample::VvarData;
 use memmap2::MmapMut;
 use page_table_entry::MappingFlags;
 use std::ptr::copy_nonoverlapping;
@@ -11,7 +11,7 @@ const PAGES_SIZE_4K: usize = 0x1000;
 
 const VVAR_SIZE: usize =
     (core::mem::size_of::<VvarData>() + PAGES_SIZE_4K - 1) & (!(PAGES_SIZE_4K - 1));
-const VDSO: &[u8] = include_bytes_aligned!(8, "../../output/libvdso.so");
+const VDSO: &[u8] = include_bytes_aligned!(8, "../../../output/libvdsoexample.so");
 const VDSO_SIZE: usize =
     ((VDSO.len() + PAGES_SIZE_4K - 1) & (!(PAGES_SIZE_4K - 1))) + PAGES_SIZE_4K; // 额外加了一页，用于bss段等未出现在文件中的段
 
@@ -123,7 +123,7 @@ pub fn map_vdso() -> Result<MmapMut, ()> {
         unsafe { core::ptr::copy_nonoverlapping(src.to_ne_bytes().as_ptr(), dst as *mut u8, count) }
     }
 
-    unsafe { libvdso::init_vdso_vtable(elf_base_addr.unwrap() as _) };
+    unsafe { libvdsoexample::init_vdso_vtable(elf_base_addr.unwrap() as _) };
 
     Ok(vdso_map)
 }

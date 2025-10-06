@@ -1,6 +1,11 @@
 [workspace]
 resolver = "2"
-members = ["build_vdso", "temp_test", "user_test", "vdso", "vdso_helper"]
+members = [
+    "build_vdso",
+    "example/user_test",
+    "example/vdso_example",
+    "vdso_helper",
+]
 exclude = ["output/libvdso", "output/vdso_wrapper"]
 
 [workspace.package]
@@ -11,7 +16,7 @@ edition = "2021"
 [workspace.dependencies]
 vdso_helper = { path = "vdso_helper" }
 build_vdso = { path = "build_vdso" }
-vdso = { path = "vdso" }
+vdso_example = { path = "example/vdso_example" }
 
 [profile.dev]
 panic = "abort"

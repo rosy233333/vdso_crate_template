@@ -43,7 +43,7 @@ dependencies = [
 [[package]]
 name = "axerrno"
 version = "0.1.0"
-source = "git+https://github.com/Starry-OS/axerrno.git#3e2372cde388aec5a666afd3456d59e8b77bf3bf"
+source = "git+https://github.com/Starry-OS/axerrno.git#3713143115fac57d6a15f5390c7af03553c5c7ad"
 dependencies = [
  "log",
 ]
@@ -89,12 +89,13 @@ checksum = "790eea4361631c5e7d22598ecd5723ff611904e3344ce8720784c93e3d83d40b"
 [[package]]
 name = "elf_parser"
 version = "0.1.0"
+source = "git+https://github.com/rosy233333/elf_parser.git#7eeb6b7c81667d0e894d0638c4a2dd7822bf2eb0"
 dependencies = [
  "axerrno",
  "cfg-if",
  "log",
  "memory_addr 0.1.0",
- "page_table_entry 0.1.0",
+ "page_table_entry 0.1.0 (git+https://github.com/Starry-OS/page_table_entry.git)",
  "xmas-elf",
 ]
 
@@ -120,13 +121,13 @@ dependencies = [
 [[package]]
 name = "hal"
 version = "0.0.0"
-source = "git+https://github.com/AsyncModules/vsched.git?rev=0351acf#0351acfb128ab0399e21f09fc6d2eb506ac97fa5"
+source = "git+https://github.com/rosy233333/vsched_hal.git#c3b15834a1bc780af847eb73e474352ff5359b39"
 dependencies = [
  "aarch64-cpu 10.0.0",
  "cfg-if",
  "linkme",
  "memory_addr 0.4.0",
- "page_table_entry 0.5.5",
+ "page_table_entry 0.1.0 (git+https://github.com/Starry-Old/page_table_entry.git)",
  "riscv",
  "static_assertions",
  "x86",
@@ -161,10 +162,11 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "1171693293099992e19cddea4e8b849964e9846f4acee11b3948bcc337be8776"
 
 [[package]]
-name = "libvdso"
+name = "libvdsoexample"
 version = "0.0.0"
 dependencies = [
- "vdso",
+ "log",
+ "vdso_example",
 ]
 
 [[package]]
@@ -222,7 +224,7 @@ checksum = "3d4054cba279515fa87761b101d857333ce06391dbe8f18a11347204a7111416"
 [[package]]
 name = "page_table_entry"
 version = "0.1.0"
-source = "git+https://github.com/Starry-OS/page_table_entry.git#8a871b43e07dd3b6da5512528566686e6bc949a9"
+source = "git+https://github.com/Starry-Old/page_table_entry.git#8a871b43e07dd3b6da5512528566686e6bc949a9"
 dependencies = [
  "aarch64-cpu 9.4.0",
  "bitflags 2.9.1",
@@ -232,13 +234,12 @@ dependencies = [
 
 [[package]]
 name = "page_table_entry"
-version = "0.5.5"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "ba811ef8ca8fb33d776e128624cb4fe25c9804cab96f83b822d4322431e6dd5a"
+version = "0.1.0"
+source = "git+https://github.com/Starry-OS/page_table_entry.git#8a871b43e07dd3b6da5512528566686e6bc949a9"
 dependencies = [
- "aarch64-cpu 10.0.0",
+ "aarch64-cpu 9.4.0",
  "bitflags 2.9.1",
- "memory_addr 0.4.0",
+ "memory_addr 0.1.0",
  "x86_64",
 ]
 
@@ -358,14 +359,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "temp_test"
-version = "0.1.0"
-dependencies = [
- "build_vdso",
- "vdso",
-]
-
-[[package]]
 name = "termcolor"
 version = "1.4.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -401,15 +394,15 @@ dependencies = [
  "env_logger",
  "include_bytes_aligned",
  "libc",
- "libvdso",
+ "libvdsoexample",
  "log",
  "memmap2",
- "page_table_entry 0.1.0",
+ "page_table_entry 0.1.0 (git+https://github.com/Starry-OS/page_table_entry.git)",
  "xmas-elf",
 ]
 
 [[package]]
-name = "vdso"
+name = "vdso_example"
 version = "0.1.0"
 dependencies = [
  "vdso_helper",

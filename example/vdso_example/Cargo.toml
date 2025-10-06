@@ -1,5 +1,5 @@
 [package]
-name = "vdso"
+name = "vdso_example"
 version.workspace = true
 edition.workspace = true
 

@@ -1,0 +1,9 @@
+[toolchain]
+profile = "minimal"
+channel = "nightly-2025-09-12"
+components = ["rust-src", "llvm-tools", "rustfmt", "clippy"]
+targets = [
+    "x86_64-unknown-linux-musl",
+    "aarch64-unknown-linux-musl",
+    "riscv64gc-unknown-linux-musl",
+]

@@ -1,5 +1,5 @@
 use crate::map::map_vdso;
-use libvdso::*;
+use libvdsoexample::*;
 
 mod map;
 
