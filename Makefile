@@ -12,7 +12,7 @@ UTEST_BIN ?= $(TARGET_DIR)/$(TARGET)/$(MODE)/$(UTEST)
 LOG ?= error
 
 OBJDUMP = rust-objdump -t -T -r -R -d --print-imm-hex --x86-asm-syntax=intel
-OBJCOPY = rust-objcopy -X -g
+OBJCOPY = rust-objcopy -X
 
 # Target
 ifeq ($(ARCH), x86_64)
@@ -61,8 +61,9 @@ disasm: all
 clean:
 	rm -rf $(TARGET_DIR)
 
-utest: all
-	RUST_BACKTRACE=1 RUSTFLAGS='-C target-feature=+crt-static' cargo build --bin $(UTEST) --target $(TARGET) --target-dir $(TARGET_DIR) $(build_args-$(MODE))
+# utest: all
+utest:
+	RUST_BACKTRACE=1 RUSTFLAGS='-C target-feature=+crt-static' cargo build --bin $(UTEST) --target $(TARGET) --target-dir $(TARGET_DIR) $(build_args-$(MODE)) -j 1
 	RUST_LOG=$(LOG) qemu-$(ARCH) -D qemu.log -d in_asm,int,mmu,pcall,cpu_reset,page,guest_errors $(UTEST_BIN)
 
 .PHONY: all clean 

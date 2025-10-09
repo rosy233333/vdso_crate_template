@@ -1,15 +1,19 @@
 // Copied and modified from https://github.com/AsyncModules/vsched/blob/e19b572714a6931972f1428e42d43cc34bcf47f2/user_test/src/vsched.rs
+use include_bytes_aligned::include_bytes_aligned;
+use libvdsoexample::VvarData;
 use memmap2::MmapMut;
 use page_table_entry::MappingFlags;
-use std::io::Read;
+use std::ptr::copy_nonoverlapping;
 use std::str::from_utf8;
-use structs::shared::VvarData;
 use xmas_elf::program::SegmentData;
 
+const PAGES_SIZE_4K: usize = 0x1000;
+
 const VVAR_SIZE: usize =
-    (core::mem::size_of::<VvarData>() + config::PAGES_SIZE_4K - 1) & (!(config::PAGES_SIZE_4K - 1));
-const VDSO: &[u8] = core::include_bytes!("../../libvdsoexample.so");
-const VDSO_SIZE: usize = (VDSO.len() + config::PAGES_SIZE_4K - 1) & (!(config::PAGES_SIZE_4K - 1));
+    (core::mem::size_of::<VvarData>() + PAGES_SIZE_4K - 1) & (!(PAGES_SIZE_4K - 1));
+const VDSO: &[u8] = include_bytes_aligned!(8, "../../../output/libvdsoexample.so");
+const VDSO_SIZE: usize =
+    ((VDSO.len() + PAGES_SIZE_4K - 1) & (!(PAGES_SIZE_4K - 1))) + PAGES_SIZE_4K; // 额外加了一页，用于bss段等未出现在文件中的段
 
 pub fn map_vdso() -> Result<MmapMut, ()> {
     let mut vdso_map = MmapMut::map_anon(VVAR_SIZE + VDSO_SIZE).unwrap();
@@ -33,12 +37,14 @@ pub fn map_vdso() -> Result<MmapMut, ()> {
             return Err(());
         }
     };
+    let vvar = vdso_map.as_ptr() as *const u8 as *mut u8 as *mut () as *mut VvarData;
+    unsafe { vvar.write(VvarData::default()) };
 
     let vdso_so = &mut vdso_map[VVAR_SIZE..];
-    #[allow(const_item_mutation)]
-    VDSO.read(vdso_so).unwrap();
+    // #[allow(const_item_mutation)]
+    // VDSO.read(vdso_so).unwrap();
 
-    let vdso_elf = xmas_elf::ElfFile::new(vdso_so).expect("Error parsing app ELF file.");
+    let vdso_elf = xmas_elf::ElfFile::new(VDSO).expect("Error parsing app ELF file.");
     if let Some(interp) = vdso_elf
         .program_iter()
         .find(|ph| ph.get_type() == Ok(xmas_elf::program::Type::Interp))
@@ -54,7 +60,6 @@ pub fn map_vdso() -> Result<MmapMut, ()> {
         log::debug!("Interpreter path: {:?}", _interp_path);
     }
     let elf_base_addr = Some(vdso_so.as_ptr() as usize);
-    // let relocate_pairs = elf_parser::get_relocate_pairs(&elf, elf_base_addr);
     let segments = elf_parser::get_elf_segments(&vdso_elf, elf_base_addr);
     let relocate_pairs = elf_parser::get_relocate_pairs(&vdso_elf, elf_base_addr);
     for segment in segments {
@@ -80,6 +85,21 @@ pub fn map_vdso() -> Result<MmapMut, ()> {
         if segment.flags.contains(MappingFlags::WRITE) {
             flag |= libc::PROT_WRITE;
         }
+        if let Some(data) = segment.data {
+            assert!(data.len() <= segment.size);
+            let src = data.as_ptr();
+            let dst = segment.vaddr.as_usize() as *mut u8;
+            let count = data.len();
+            unsafe {
+                copy_nonoverlapping(src, dst, count);
+                if segment.size > count {
+                    core::ptr::write_bytes(dst.add(count), 0, segment.size - count);
+                }
+            }
+        } else {
+            unsafe { core::ptr::write_bytes(segment.vaddr.as_usize() as *mut u8, 0, segment.size) };
+        }
+
         unsafe {
             if libc::mprotect(segment.vaddr.as_usize() as _, segment.size, flag)
                 == libc::MAP_FAILED as _
@@ -103,7 +123,7 @@ pub fn map_vdso() -> Result<MmapMut, ()> {
         unsafe { core::ptr::copy_nonoverlapping(src.to_ne_bytes().as_ptr(), dst as *mut u8, count) }
     }
 
-    unsafe { api::init_vdso_vtable(elf_base_addr.unwrap() as _, &vdso_elf) };
+    unsafe { libvdsoexample::init_vdso_vtable(elf_base_addr.unwrap() as _) };
 
     Ok(vdso_map)
 }

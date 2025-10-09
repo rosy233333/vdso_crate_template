@@ -1,6 +1,8 @@
 [package]
-name = "structs"
+name = "build_vdso"
 version.workspace = true
 edition.workspace = true
 
 [dependencies]
+regex = "1.8.5"
+xmas-elf = "0.9.0"
