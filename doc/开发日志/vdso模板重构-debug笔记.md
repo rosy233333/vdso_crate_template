@@ -38,3 +38,61 @@ section .rela.dyn LMA overlaps section .data LMA
 
 - Async-OS中的加载机制只是拷贝了SO文件，并没有按Segment加载。因此修改了Async-OS的加载机制。
 - 使用`include_bytes`加载SO文件时，可能出现不对齐的问题。因此改为了`include_bytes_aligned`库提供的`include_bytes_aligned`宏。
+
+## 编译时的bug
+
+### 在`user_test`上编译遇到的bug
+
+拆分出用于编译vdso编译单元的`build_vdso`模块后，发现其编译函数在单元测试时可以正常运行，而在集成进`user_test`时则会报错。
+
+最终得知了原因：在`build.rs`中使用`Command`调用`cargo`时，其创建的进程的环境变量与主进程的环境变量相同。而`cargo`、`rustc`等程序在运行时会向进程中添加环境变量，这些环境变量就会影响到使用`Command`调用的、用于编译vdso编译单元的`cargo`。
+
+出现问题的是`crt-static`相关的设置，因此通过如下代码阻断了该设置通过环境变量的传递。
+
+```Rust
+// 如果启用了crt-static特性，则在vdso的编译中去掉该特性，否则会报错
+if let Ok(value) = env::var("CARGO_CFG_TARGET_FEATURE") {
+    if value.contains("crt-static") {
+        let mut vdso_value = value.replace(",crt-static", "");
+        if vdso_value == value {
+            vdso_value = value.replace("crt-static,", "")
+        }
+        if vdso_value == value {
+            // 说明该变量只指定了crt-static一项
+            cargo.env_remove("CARGO_CFG_TARGET_FEATURE");
+        } else {
+            cargo.env("CARGO_CFG_TARGET_FEATURE", vdso_value);
+        }
+    }
+}
+if let Ok(value) = env::var("CARGO_ENCODED_RUSTFLAGS") {
+    if value.contains("+crt-static") {
+        let vdso_value = value.replace("+crt-static", "-crt-static");
+        cargo.env("CARGO_ENCODED_RUSTFLAGS", vdso_value);
+    }
+}
+```
+
+之后，可以正常运行。
+
+### 在AsyncOS上编译遇到的bug
+
+在AsyncOS上运行该模板时，遇到了“在vdso的编译过程中，找不到`hal`依赖库”的bug。（`hal`库为`vdso_helper`依赖的库。）但如果使用user_test，则在同样的编译流程中没有出现此bug。
+
+分析后发现，是因为使用不同的工具链版本导致的该问题。这意味着，主编译单元使用的工具链版本影响到了vdso编译单元的编译。因此，需要尽可能消除这一影响。
+
+之前已得知，主编译单元添加的环境变量会影响到vdso编译单元。因此，在比对了添加前后的环境变量列表后发现，主编译单元添加的环境变量均带有`"RUST"`或`"CARGO"`字符串。因此，根据该特征清除了所有相应的环境变量，即可为vdso编译单元的`cargo`创建一个干净的执行环境。
+
+如上设置后，仍出现编译错误。依然找不到`hal`依赖库，不过报错的主体从vdso编译单元变更为了主编译单元。分析依赖关系后得知，主编译单元也会依赖`hal`库，因此出现了版本不兼容导致的错误。
+
+首先，认为可能是因为`hal`库没有位于git仓库根目录引起的。因此，将`hal`库从`vsched`中分离出来，分别尝试了git方式和路径方式的依赖，均出现报错。且该报错明确了错误原因就是工具链版本不兼容。
+
+其次，尝试升级AsyncOS使用的工具链版本，但失败。新版的工具链会导致一些汇编宏无法被识别出来。
+
+最后，修改`hal`库，使其与AsyncOS所在的工具链版本（nightly-2024-11-05）兼容：
+
+- 将`Cargo.toml`中的`edition`由`2024`改为`2021`。
+- 更改了`hal`的依赖库，`page_table_entry`的版本，降级到AsyncOS使用的旧版。
+- 在裸函数（naked function）的语法上，`nightly-2024-11-05`与最新版存在区别：前者需要在开启相应cargo feature后，使用`#[naked]`；后者不需要相应cargo feature，使用`#[unsafe(naked)]`。因为使用裸函数会导致无法同时兼容两个工具链版本，因此将代码中涉及的所有裸函数全都改写为“内联汇编+`extern "C"`”的形式，实现了对两个版本的兼容。
+
+进行这些修改后，vdso共享库可以兼容两个工具链版本，也可以在AsyncOS上正常运行了。

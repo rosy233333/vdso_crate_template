@@ -169,51 +169,13 @@ fn build_so(config: &BuildConfig) {
         cargo_args.push(build_verbose);
     }
     let mut cargo = Command::new("cargo");
-    // // 如果启用了crt-static特性，则在vdso的编译中去掉该特性，否则会报错
-    // if let Ok(value) = env::var("CARGO_CFG_TARGET_FEATURE") {
-    //     if value.contains("crt-static") {
-    //         let mut vdso_value = value.replace(",crt-static", "");
-    //         if vdso_value == value {
-    //             vdso_value = value.replace("crt-static,", "")
-    //         }
-    //         if vdso_value == value {
-    //             // 说明该变量只指定了crt-static一项
-    //             cargo.env_remove("CARGO_CFG_TARGET_FEATURE");
-    //         } else {
-    //             cargo.env("CARGO_CFG_TARGET_FEATURE", vdso_value);
-    //         }
-    //     }
-    // }
-    // if let Ok(value) = env::var("CARGO_ENCODED_RUSTFLAGS") {
-    //     if value.contains("+crt-static") {
-    //         let vdso_value = value.replace("+crt-static", "-crt-static");
-    //         cargo.env("CARGO_ENCODED_RUSTFLAGS", vdso_value);
-    //     }
-    // }
-    // // 去掉已指定的工具链版本
-    // cargo.env_remove("CARGO");
-    // cargo.env_remove("RUSTUP_TOOLCHAIN");
-    // cargo.env_remove("LD_LIBRARY_PATH");
-    // cargo.env_remove("RUSTC");
-    // cargo.env_remove("RUSTDOC");
+
     cargo.env_clear();
     for (key, value) in env::vars() {
         if !(key.starts_with("CARGO") || key.starts_with("RUST")) {
             cargo.env(key, value);
         }
     }
-    // match config.arch.as_str() {
-    //     "x86_64" => {
-    //         cargo.env("RUSTC_LINKER", "x86_64-linux-musl-ld");
-    //     }
-    //     "aarch64" => {
-    //         cargo.env("RUSTC_LINKER", "aarch64-linux-musl-ld");
-    //     }
-    //     "riscv64" => {
-    //         cargo.env("RUSTC_LINKER", "riscv64-linux-musl-ld");
-    //     }
-    //     _ => panic!("Unsupported arch"),
-    // }
     let wrapper_dir = Path::new(&config.out_dir).join("vdso_wrapper");
     cargo
         .current_dir(&wrapper_dir)
