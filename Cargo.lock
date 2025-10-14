@@ -89,13 +89,13 @@ checksum = "790eea4361631c5e7d22598ecd5723ff611904e3344ce8720784c93e3d83d40b"
 [[package]]
 name = "elf_parser"
 version = "0.1.0"
-source = "git+https://github.com/rosy233333/elf_parser.git#7eeb6b7c81667d0e894d0638c4a2dd7822bf2eb0"
+source = "git+https://github.com/rosy233333/elf_parser.git#b6070347c783cc06be1f58b81b64eadbc66d401d"
 dependencies = [
  "axerrno",
  "cfg-if",
  "log",
  "memory_addr 0.1.0",
- "page_table_entry 0.1.0 (git+https://github.com/Starry-OS/page_table_entry.git)",
+ "page_table_entry 0.1.0 (git+https://github.com/rosy233333/page_table_entry.git)",
  "xmas-elf",
 ]
 
@@ -224,7 +224,7 @@ checksum = "3d4054cba279515fa87761b101d857333ce06391dbe8f18a11347204a7111416"
 [[package]]
 name = "page_table_entry"
 version = "0.1.0"
-source = "git+https://github.com/Starry-Old/page_table_entry.git#8a871b43e07dd3b6da5512528566686e6bc949a9"
+source = "git+https://github.com/rosy233333/page_table_entry.git#16dc9ff22b7695490f2421af7e9d3bf38bb12285"
 dependencies = [
  "aarch64-cpu 9.4.0",
  "bitflags 2.9.1",
@@ -235,7 +235,7 @@ dependencies = [
 [[package]]
 name = "page_table_entry"
 version = "0.1.0"
-source = "git+https://github.com/Starry-OS/page_table_entry.git#8a871b43e07dd3b6da5512528566686e6bc949a9"
+source = "git+https://github.com/Starry-Old/page_table_entry.git#8a871b43e07dd3b6da5512528566686e6bc949a9"
 dependencies = [
  "aarch64-cpu 9.4.0",
  "bitflags 2.9.1",
@@ -397,7 +397,7 @@ dependencies = [
  "libvdsoexample",
  "log",
  "memmap2",
- "page_table_entry 0.1.0 (git+https://github.com/Starry-OS/page_table_entry.git)",
+ "page_table_entry 0.1.0 (git+https://github.com/rosy233333/page_table_entry.git)",
  "xmas-elf",
 ]
 
