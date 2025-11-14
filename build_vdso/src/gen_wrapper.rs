@@ -41,8 +41,7 @@ fn lib_rs_content(config: &BuildConfig) -> String {
     format!(
         r#"#![no_std]
 
-extern crate {};
-pub use self::{}::*;
+pub use {}::*;
 
 #[panic_handler]
 fn panic(_info: &core::panic::PanicInfo) -> ! {{
@@ -50,6 +49,6 @@ fn panic(_info: &core::panic::PanicInfo) -> ! {{
 }}
 
 "#,
-        config.package_name, config.package_name,
+        config.package_name,
     )
 }

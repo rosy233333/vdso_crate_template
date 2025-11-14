@@ -12,7 +12,7 @@ elf_parser = { git = "https://github.com/rosy233333/elf_parser.git" }
 libc = "0.2"
 page_table_entry = { git = "https://github.com/rosy233333/page_table_entry.git" }
 include_bytes_aligned = "0.1.4"
-libvdsoexample = { path = "../../output/libvdsoexample" }
+libvdsoexample = { path = "../../output/libvdsoexample", features = ["log"] }
 
 [build-dependencies]
 build_vdso = { workspace = true }
