@@ -121,7 +121,7 @@ dependencies = [
 [[package]]
 name = "hal"
 version = "0.0.0"
-source = "git+https://github.com/rosy233333/vsched_hal.git#ee0c59876084f0d4e44c5c296d4c2d6b4f98c0cc"
+source = "git+https://github.com/rosy233333/vsched_hal.git#be4f44ef8e66f99a6ea06ca1411e505b1a1b1a5c"
 dependencies = [
  "aarch64-cpu 10.0.0",
  "cfg-if",

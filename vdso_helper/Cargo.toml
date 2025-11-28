@@ -5,3 +5,4 @@ edition.workspace = true
 
 [dependencies]
 hal = { git = "https://github.com/rosy233333/vsched_hal.git" }
+# hal = { path = "../../vsched_hal" }
