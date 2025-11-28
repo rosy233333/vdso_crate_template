@@ -146,8 +146,9 @@ fn build_so(config: &BuildConfig) {
         .unwrap()
         .display()
         .to_string();
+    let toolchain_arg = format!("+{}", &config.toolchain);
     let mut cargo_args = vec![
-        "+nightly-2025-09-12",
+        &toolchain_arg,
         "--config",
         &linker_config,
         "build",

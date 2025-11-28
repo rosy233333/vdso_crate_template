@@ -11,7 +11,7 @@ macro_rules! vvar_data {
         #[derive(Default)]
         #[repr(C)]
         pub struct VvarData {
-            $($i: $t),*
+            $(pub $i: $t),*
         }
 
         trait VvarDataRequirements: Default + Sync {}
@@ -25,6 +25,8 @@ macro_rules! vvar_data {
 ///
 /// - $1: 共享数据结构的字段名（在vvar_data宏中定义）。
 /// - $2: 映射代码和数据段过程中的页面大小（usize类型）（可不填写，则默认为4K）。
+///
+/// 返回值：&'static T类型，代表对相应结构的引用
 ///
 /// SAFETY：
 ///
@@ -47,8 +49,12 @@ macro_rules! get_vvar_data {
     }};
 }
 
+/// 此处的pub仅用于在动态符号表中得到该函数的地址以便检查
+///
+/// 该函数不应被用户直接调用
 #[inline(never)]
 #[no_mangle]
+#[link_section = ".text.start"]
 pub fn get_code_base(page_size: usize) -> usize {
     let pc = unsafe { hal::asm::get_pc() };
     pc & !(page_size - 1)
