@@ -57,13 +57,17 @@ fn api_rs_content(config: &BuildConfig) -> String {
         .join("api")
         .with_extension("rs");
     // println!("api.rs path: {}", api_rs_path.display());
-    let vsched_api_file_content = fs::read_to_string(&api_rs_path).unwrap();
+    let mut vsched_api_file_content = fs::read_to_string(&api_rs_path).unwrap();
+    vsched_api_file_content = vsched_api_file_content.split('\n').collect();
+    vsched_api_file_content = vsched_api_file_content.split('\t').collect();
+    vsched_api_file_content = vsched_api_file_content.split("    ").collect();
+    // println!("vsched_api_file_content: {}", vsched_api_file_content);
     let elf_path = Path::new(&config.out_dir).join(format!("{}.so", config.so_name));
     let so_content = fs::read(&elf_path).unwrap();
     let vdso_elf = xmas_elf::ElfFile::new(&so_content).expect("Error parsing app ELF file.");
 
     let re = regex::Regex::new(
-        r#"#\[unsafe\(no_mangle\)\]\npub extern \"C\" fn ([a-zA-Z0-9_]?.*)(\([a-zA-Z0-9_:]?.*\)[->]?.*) \{"#,
+        r#"#\[unsafe\(no_mangle\)\]pub extern \"C\" fn ([a-zA-Z0-9_]+)(\([a-zA-Z0-9_:]?[^\{]*\)[->]?[^\{]*) \{"#,
     )
     .unwrap();
     // 获取共享调度器的 api
@@ -72,7 +76,7 @@ fn api_rs_content(config: &BuildConfig) -> String {
         .captures_iter(&vsched_api_file_content)
         .map(|c| c.extract())
     {
-        // println!("{}: {}", name, args);
+        // println!("name: {}\nargs: {}", name, args);
         fns.push((name, args));
     }
     // pub use vdso库中的内容

@@ -33,6 +33,8 @@ fn main() {
         "Expected get_shared() to return 1, got {}",
         example.i
     );
+
+    assert_eq!(test_args(Some(1), Ok(2), (3, 4)), (Some(2), Ok(3), (4, 5)));
     println!("Test passed!");
     drop(map);
 }
