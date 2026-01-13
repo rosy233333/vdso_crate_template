@@ -1,3 +1,12 @@
+//! 本模块用于构建vDSO库。
+//!
+//! 在vDSO外部代码的build.rs中调用[`build_vdso`]函数，传入[`BuildConfig`]配置结构体，即可完成vDSO库的构建。
+//!
+//! vDSO库的构建产物包括so文件和API库，vDSO外部代码在正确加载so文件与vVAR数据区后，将so文件的加载地址传入API库中，
+//! 即可通过API库调用vDSO中的函数。
+
+#![deny(missing_docs)]
+
 use std::{
     env, fs,
     io::{stderr, stdout, Write},
@@ -15,6 +24,10 @@ mod gen_wrapper;
 use gen_wrapper::gen_wrapper;
 
 /// 构建vdso的代码。在vdso外部代码的build.rs中调用该函数。
+///
+/// # 参数
+///
+/// - `config`: vdso构建配置结构体，详见[`BuildConfig`]。
 pub fn build_vdso(config: &BuildConfig) {
     // // 用于打印环境变量的测试代码。
     // // 如果build_vdso执行失败，可能是主编译单元设置了某些环境变量，并被继承到了vdso的编译中。

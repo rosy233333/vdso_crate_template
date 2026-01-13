@@ -1,14 +1,19 @@
+//! 提供[`BuildConfig`]结构体，用于配置vDSO库的构建参数。
+
+/// 用于传入[`super::build_vdso`]函数中，配置vDSO库的构建参数。
+///
+/// 使用时，建议调用[`BuildConfig::new`]函数创建实例，并在创建后手动修改需要修改的字段。
 pub struct BuildConfig {
     /// 目标架构，有效值为"x86_64"、"aarch64"、"riscv64"
     pub arch: String,
-    /// vdso源代码所在目录
+    /// vDSO源代码所在目录
     pub src_dir: String,
-    /// vdso包名称
+    /// vDSO包名称
     pub package_name: String,
     /// 编译输出目录，会输出链接脚本和最终的.so文件
     /// 若在build.rs中调用，则应传入环境变量OUT_DIR的值
     pub out_dir: String,
-    /// 生成的vdso库的soname，默认为"lib" + package_name
+    /// 生成的vDSO库的soname，默认为"lib" + package_name
     pub so_name: String,
     /// 编译模式，"debug"或"release"
     pub mode: String,
@@ -17,7 +22,7 @@ pub struct BuildConfig {
     /// 生成的api库的名称，默认为"lib" + package_name
     /// 该库会被拷贝到输出目录，并可被调用者依赖
     pub api_lib_name: String,
-    /// 编译vdso使用的工具链版本
+    /// 编译vDSO使用的工具链版本
     /// 默认为"nightly"，可指定具体版本号，如"nightly-2025-09-12"
     pub toolchain: String,
 }

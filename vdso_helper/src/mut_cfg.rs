@@ -1,8 +1,13 @@
-//! 用于生成可在编译期由环境变量指定的常量。
+//! 用于创建可在编译期由环境变量指定的常量。
 //!
 //! 使用该模块的原因是vDSO的接口不支持泛型，因此许多常量都需要在编译期确定。
 //!
 //! 通过使用编译期的环境变量改变常量的值，可以为vDSO模块带来一定的灵活性。
+//!
+//! ## 包含
+//!
+//! - [`mut_cfg!`](`crate::mut_cfg!`)
+//! - [`use_mut_cfg!`](`crate::use_mut_cfg!`)
 
 /// 生成可变配置常量的宏。
 ///
@@ -47,6 +52,9 @@ macro_rules! mut_cfg {
 
         println!("cargo:rerun-if-changed=src/*");
         println!("cargo:rerun-if-changed={}", out_path.display());
+        $(
+            println!("cargo:rerun-if-env-changed={}", stringify!($i));
+        )*
     };
 }
 
