@@ -26,6 +26,7 @@
 #[macro_export]
 macro_rules! vvar_data {
     ($($i:ident: $t:ty),* $(,)?) => {
+        #[allow(missing_docs)]
         #[derive(Default)]
         #[repr(C)]
         pub struct VvarData {
