@@ -84,53 +84,58 @@ fn gen_linker_script(arch: &str) -> String {
     let linker = format!(
         r#"OUTPUT_ARCH({})
 
+PHDRS {{
+    /* 首个 LOAD 段需要覆盖 ELF 头和程序头，保证生成的 DYN 镜像仍从 vaddr 0 开始装载。 */
+    text PT_LOAD FILEHDR PHDRS FLAGS(5);
+    /* 只读、不可执行的数据独立成段，避免 loader 将其误判为可共享的代码页。 */
+    rodata PT_LOAD FLAGS(4);
+    /* 动态信息、.data 和 .bss 使用可写段承载。 */
+    data PT_LOAD FLAGS(6);
+    dynamic PT_DYNAMIC FLAGS(6);
+}}
+
 SECTIONS {{
     . = SIZEOF_HEADERS;
 
-    /* 先放置动态链接相关的只读段 */
-    .hash		: {{ *(.hash) }}
-    .gnu.hash	: {{ *(.gnu.hash) }}
-    .dynsym		: {{ *(.dynsym) }}
-    .dynstr		: {{ *(.dynstr) }}
-    .gnu.version	: {{ *(.gnu.version) }}
-    .gnu.version_d	: {{ *(.gnu.version_d) }}
-    .gnu.version_r	: {{ *(.gnu.version_r) }}
-
-    /* 动态段单独分配 */
-    .dynamic    : {{ *(.dynamic) }}
-
-    . = ALIGN(16);
-    /* 代码段（.text）需要放在只读数据段之前 */
+    /* 代码段单独放在可执行 PT_LOAD 中，以便后续地址空间直接共享。 */
     .text       : {{
         *(.text.start)
         *(.text .text.*)
-    }}
+    }} :text
 
     . = ALIGN(4K);
-    /* 只读数据段（.rodata等） */
+    /* 动态链接元数据和只读常量放在只读段中，避免 text relocation 检查误报。 */
+    .hash		: {{ *(.hash) }} :rodata
+    .gnu.hash	: {{ *(.gnu.hash) }} :rodata
+    .dynsym		: {{ *(.dynsym) }} :rodata
+    .dynstr		: {{ *(.dynstr) }} :rodata
+    .gnu.version	: {{ *(.gnu.version) }} :rodata
+    .gnu.version_d	: {{ *(.gnu.version_d) }} :rodata
+    .gnu.version_r	: {{ *(.gnu.version_r) }} :rodata
     .rodata     : {{
         *(.rodata .rodata.* .gnu.linkonce.r.*)
         *(.note.*)
-    }}
+    }} :rodata
 
     . = ALIGN(4K);
-    .plt : {{ *(.plt .plt.*) }}
+    .plt : {{ *(.plt .plt.*) }} :rodata
+    .rela.dyn   : {{ *(.rela.dyn) }} :rodata
+    .eh_frame_hdr	: {{ *(.eh_frame_hdr) }} :rodata
+    .eh_frame	: {{ KEEP (*(.eh_frame)) }} :rodata
 
     . = ALIGN(4K);
-    /* 数据段（.data、.bss等）单独分配 */
+    /* 动态段和可写数据统一放到可写 PT_LOAD 中。 */
+    .dynamic    : {{ *(.dynamic) }} :data :dynamic
     .data       : {{
         *(.data .data.* .gnu.linkonce.d.*)
         *(.got.plt) *(.got)
-    }}
+    }} :data
 
     . = ALIGN(4K);
     .bss        : {{
         *(.bss .bss.* .gnu.linkonce.b.*)
         *(COMMON)
-    }}
-
-    .eh_frame_hdr	: {{ *(.eh_frame_hdr) }}
-    .eh_frame	: {{ KEEP (*(.eh_frame)) }}
+    }} :data
 }}
 "#,
         arch_lds
