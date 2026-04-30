@@ -50,11 +50,6 @@ macro_rules! vvar_data {
 ///
 /// 返回值：`&'static T`类型，代表对相应结构的引用
 ///
-/// SAFETY：
-///
-/// 需要在生成的so文件中检查，函数[`get_code_base`]的偏移量要小于一页。
-///
-/// 否则，该宏获取到的引用地址会不正确。
 #[macro_export]
 macro_rules! get_vvar_data {
     ($i:ident, $e:expr) => {{
@@ -74,10 +69,21 @@ macro_rules! get_vvar_data {
 /// 此处的pub仅用于在动态符号表中得到该函数的地址以便检查
 ///
 /// 该函数不应被用户直接调用
+/// 
+/// [`get_code_base`] 会从当前代码所在页开始，向前扫描 ELF 头，
+/// 从而定位 vDSO 的真实映射基址。
 #[inline(never)]
 #[no_mangle]
-#[link_section = ".text.start"]
+// #[link_section = ".text.start"]
 pub fn get_code_base(page_size: usize) -> usize {
     let pc = unsafe { hal::asm::get_pc() };
-    pc & !(page_size - 1)
+    // pc & !(page_size - 1)
+    let mut elf_base = pc & !(page_size - 1);
+    loop {
+        let magic = unsafe { core::ptr::read_unaligned(elf_base as *const [u8; 4]) };
+        if magic == [0x7f, b'E', b'L', b'F'] {
+            return elf_base;
+        }
+        elf_base -= page_size;
+    }
 }
