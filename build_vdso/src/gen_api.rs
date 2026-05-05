@@ -108,7 +108,9 @@ fn api_rs_content(config: &BuildConfig) -> String {
         vsched_interface_file_content
     );
 
-    let re = regex::Regex::new(r#"pub trait ([a-zA-Z0-9_]+) \{([^\{\}]+)\}"#).unwrap();
+    let re = regex::Regex::new(r#"trait_interface\! \{pub trait ([a-zA-Z0-9_]+) \{([^\{\}]+)\}\}"#)
+        .unwrap();
+    // let re = regex::Regex::new(r#"pub trait ([a-zA-Z0-9_]+) \{([^\{\}]+)\}"#).unwrap();
     // let re = regex::Regex::new(r#"pub trait ([a-zA-Z0-9_]+)\{(.)?"#).unwrap();
 
     // 获取vDSO的 interface
@@ -127,7 +129,7 @@ fn api_rs_content(config: &BuildConfig) -> String {
             });
         traits.push((name, fns_name));
     }
-    // println!("cargo:warning=traits: {:?}", traits);
+    println!("cargo:warning=traits: {:?}", traits);
     // panic!("pause");
 
     // pub use vdso库中的内容

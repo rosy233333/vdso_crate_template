@@ -22,10 +22,6 @@ SECTIONS {
     .gnu.version_d  : { *(.gnu.version_d) } :text_seg
     .gnu.version_r  : { *(.gnu.version_r) } :text_seg
 
-    /* 动态段放入 text_seg，避免和 rw 段共享同一批页 */
-    . = ALIGN(4K);
-    .dynamic        : { *(.dynamic) } :text_seg :dynamic
-
     . = ALIGN(16);
     .text           : {
         *(.text.start)
@@ -34,6 +30,8 @@ SECTIONS {
 
     . = ALIGN(4K);
     .plt : { *(.plt .plt.*) } :text_seg
+
+    .pad_text : { BYTE(0); } :text_seg
 
     /* 只读数据段 */
     . = ALIGN(4K);
@@ -44,6 +42,12 @@ SECTIONS {
 
     .eh_frame_hdr   : { *(.eh_frame_hdr) } :ro_seg :eh_frame
     .eh_frame       : { KEEP (*(.eh_frame)) } :ro_seg
+
+    /* 动态段放入 ro_seg，避免和 rw 段共享同一批页 */
+    . = ALIGN(4K);
+    .dynamic        : { *(.dynamic) } :ro_seg :dynamic
+
+    .pad_ro : { BYTE(0); } :ro_seg
 
     . = ALIGN(4K);
     .data           : {
@@ -56,4 +60,6 @@ SECTIONS {
         *(.bss .bss.* .gnu.linkonce.b.*)
         *(COMMON)
     } :data_seg
+
+    .pad_data : { BYTE(0); } :data_seg
 }

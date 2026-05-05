@@ -82,6 +82,7 @@ fn gen_linker_script(arch: &str) -> String {
         _ => panic!("Unsupported arch"),
     };
     let linker_template = include_str!("link.ld");
+    // let linker_template = include_str!("link_no_segment.ld");
     let linker = linker_template.replace("{output_arch}", arch_lds);
     linker
 }
