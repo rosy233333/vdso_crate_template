@@ -250,6 +250,15 @@ fn exported_symbols(config: &BuildConfig) -> Vec<String> {
         .collect();
     symbols.append(&mut api_symbols);
 
+    let re = regex::Regex::new(r#"extern \"C\" \{([^\{\}]+)\}"#).unwrap();
+    for (_, [extern_fns]) in re.captures_iter(&api_source).map(|c| c.extract()) {
+        let fns_re = regex::Regex::new(r#"fn ([a-zA-Z0-9_]+)\(\) -> !;"#).unwrap();
+        for (_, [name]) in fns_re.captures_iter(&extern_fns).map(|c| c.extract()) {
+            // println!("name: {}", name);
+            symbols.push(name.into());
+        }
+    }
+
     let interface_rs_path = Path::new(&config.src_dir).join("src").join("interface.rs");
     let interface_source = fs::read_to_string(&interface_rs_path).unwrap();
     let re = regex::Regex::new(r#"pub trait ([a-zA-Z0-9_]+) \{([^\{\}]+)\}"#).unwrap();

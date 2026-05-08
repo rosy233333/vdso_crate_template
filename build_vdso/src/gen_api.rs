@@ -94,6 +94,18 @@ fn api_rs_content(config: &BuildConfig) -> String {
         fns.push((name, args));
     }
 
+    let re = regex::Regex::new(r#"extern \"C\" \{([^\{\}]+)\}"#).unwrap();
+    for (_, [extern_fns]) in re
+        .captures_iter(&vsched_api_file_content)
+        .map(|c| c.extract())
+    {
+        let fns_re = regex::Regex::new(r#"fn ([a-zA-Z0-9_]+)\(\) -> !;"#).unwrap();
+        for (_, [name]) in fns_re.captures_iter(&extern_fns).map(|c| c.extract()) {
+            // println!("name: {}", name);
+            fns.push((name, "() -> !"));
+        }
+    }
+
     let interface_rs_path = Path::new(&config.src_dir)
         .join("src")
         .join("interface")
@@ -103,10 +115,10 @@ fn api_rs_content(config: &BuildConfig) -> String {
     vsched_interface_file_content = vsched_interface_file_content.split('\n').collect();
     vsched_interface_file_content = vsched_interface_file_content.split('\t').collect();
     vsched_interface_file_content = vsched_interface_file_content.split("    ").collect();
-    println!(
-        "cargo:warning=vsched_interface_file_content: {}",
-        vsched_interface_file_content
-    );
+    // println!(
+    //     "cargo:warning=vsched_interface_file_content: {}",
+    //     vsched_interface_file_content
+    // );
 
     let re = regex::Regex::new(r#"trait_interface\! \{pub trait ([a-zA-Z0-9_]+) \{([^\{\}]+)\}\}"#)
         .unwrap();
@@ -138,7 +150,7 @@ fn api_rs_content(config: &BuildConfig) -> String {
         config.package_name, config.package_name
     );
     // vdso_vtable 数据结构定义
-    let mut vdso_vtable_struct_str = "struct VdsoVTable {\n".to_string();
+    let mut vdso_vtable_struct_str = "pub struct VdsoVTable {\n".to_string();
     for (name, args) in fns.iter() {
         vdso_vtable_struct_str.push_str(&format!("    pub {}: Option<fn{}>,\n", name, args));
     }
@@ -159,7 +171,7 @@ fn api_rs_content(config: &BuildConfig) -> String {
 
     // 定义静态的 VDSO_VTABLE
     let mut static_vdso_vtable_str =
-        "\nstatic mut VDSO_VTABLE: VdsoVTable = VdsoVTable {\n".to_string();
+        "\npub static mut VDSO_VTABLE: VdsoVTable = VdsoVTable {\n".to_string();
     for (name, _) in fns.iter() {
         static_vdso_vtable_str.push_str(&format!("    {}: None,\n", name));
     }
@@ -688,10 +700,10 @@ const VVAR_SIZE: usize = (core::mem::size_of::<VvarData>() + PAGES_SIZE - 1) & (
 /// 内核虚拟地址、内核物理页、大小、flags
 static KERNEL_VDSO_REGIONS: LazyInit<Vec<(usize, PhysPagePtr, usize, MappingFlags)>> = LazyInit::new();
 
-/// - 第一次调用：加载并映射vdso。
+/// - 第一次调用：加载并映射vdso。本次调用中，vspace需为当前地址空间。
 /// - 后续调用：将已加载的vdso映射到另一个地址空间。
 /// 
-/// 该函数的返回值为vDSO和vVAR的映射区域的信息，元组的四项依次为用户虚拟地址、内核虚拟地址、大小和访问权限。vDSO首地址为第二个映射区域的首地址。
+/// 该函数的返回值为本次映射的vdso首地址（vspace中的虚拟地址）。
 pub fn map_so(vspace: usize) -> *mut u8 {
     let vbase = call_interface!(MemIf::valloc(vspace, VVAR_SIZE + VDSO_SIZE));
     let mut regions = Vec::new();
