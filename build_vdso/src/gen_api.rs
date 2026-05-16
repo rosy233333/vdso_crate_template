@@ -72,7 +72,10 @@ fn api_rs_content(config: &BuildConfig) -> String {
         .with_extension("rs");
     // println!("api.rs path: {}", api_rs_path.display());
     let mut vsched_api_file_content = fs::read_to_string(&api_rs_path).unwrap();
-    vsched_api_file_content = vsched_api_file_content.split('\n').collect();
+    vsched_api_file_content = vsched_api_file_content
+        .split('\n')
+        .filter(|s| !(*s).trim().starts_with("//"))
+        .collect();
     vsched_api_file_content = vsched_api_file_content.split('\t').collect();
     vsched_api_file_content = vsched_api_file_content.split("    ").collect();
     // println!("vsched_api_file_content: {}", vsched_api_file_content);
@@ -112,7 +115,10 @@ fn api_rs_content(config: &BuildConfig) -> String {
         .with_extension("rs");
     // println!("api.rs path: {}", api_rs_path.display());
     let mut vsched_interface_file_content = fs::read_to_string(&interface_rs_path).unwrap();
-    vsched_interface_file_content = vsched_interface_file_content.split('\n').collect();
+    vsched_interface_file_content = vsched_interface_file_content
+        .split('\n')
+        .filter(|s| !(*s).trim().starts_with("//"))
+        .collect();
     vsched_interface_file_content = vsched_interface_file_content.split('\t').collect();
     vsched_interface_file_content = vsched_interface_file_content.split("    ").collect();
     // println!(
