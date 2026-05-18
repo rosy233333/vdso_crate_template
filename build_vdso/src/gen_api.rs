@@ -65,90 +65,94 @@ extern crate alloc;
 fn api_rs_content(config: &BuildConfig) -> String {
     // 修改自https://github.com/AsyncModules/vsched/blob/e728dadd75aeb8da5cec1642320a6bd24af5b5bb/vsched_apis/build.rs的build_vsched_api函数
 
+    let elf_path = Path::new(&config.out_dir).join(format!("{}.so", config.so_name));
+    let so_content = fs::read(&elf_path).unwrap();
+    let vdso_elf = xmas_elf::ElfFile::new(&so_content).expect("Error parsing app ELF file.");
+
     // 获取vDSO的 api
     let api_rs_path = Path::new(&config.src_dir)
         .join("src")
         .join("api")
         .with_extension("rs");
     // println!("api.rs path: {}", api_rs_path.display());
-    let mut vsched_api_file_content = fs::read_to_string(&api_rs_path).unwrap();
-    vsched_api_file_content = vsched_api_file_content
-        .split('\n')
-        .filter(|s| !(*s).trim().starts_with("//"))
-        .collect();
-    vsched_api_file_content = vsched_api_file_content.split('\t').collect();
-    vsched_api_file_content = vsched_api_file_content.split("    ").collect();
-    // println!("vsched_api_file_content: {}", vsched_api_file_content);
-    let elf_path = Path::new(&config.out_dir).join(format!("{}.so", config.so_name));
-    let so_content = fs::read(&elf_path).unwrap();
-    let vdso_elf = xmas_elf::ElfFile::new(&so_content).expect("Error parsing app ELF file.");
+    let mut fns = vec![];
+    if let Ok(mut vsched_api_file_content) = fs::read_to_string(&api_rs_path) {
+        vsched_api_file_content = vsched_api_file_content
+            .split('\n')
+            .filter(|s| !(*s).trim().starts_with("//"))
+            .collect();
+        vsched_api_file_content = vsched_api_file_content.split('\t').collect();
+        vsched_api_file_content = vsched_api_file_content.split("    ").collect();
+        // println!("vsched_api_file_content: {}", vsched_api_file_content);
 
-    let re = regex::Regex::new(
+        let re = regex::Regex::new(
         r#"#\[unsafe\(no_mangle\)\]pub extern \"C\" fn ([a-zA-Z0-9_]+)(\([a-zA-Z0-9_:]?[^\{]*\)[->]?[^\{]*) \{"#,
     )
     .unwrap();
 
-    let mut fns = vec![];
-    for (_, [name, args]) in re
-        .captures_iter(&vsched_api_file_content)
-        .map(|c| c.extract())
-    {
-        // println!("name: {}\nargs: {}", name, args);
-        fns.push((name, args));
-    }
+        for (_, [name, args]) in re
+            .captures_iter(&vsched_api_file_content)
+            .map(|c| c.extract())
+        {
+            // println!("name: {}\nargs: {}", name, args);
+            fns.push((name.to_owned(), args.to_owned()));
+        }
 
-    let re = regex::Regex::new(r#"extern \"C\" \{([^\{\}]+)\}"#).unwrap();
-    for (_, [extern_fns]) in re
-        .captures_iter(&vsched_api_file_content)
-        .map(|c| c.extract())
-    {
-        let fns_re = regex::Regex::new(r#"fn ([a-zA-Z0-9_]+)\(\) -> !;"#).unwrap();
-        for (_, [name]) in fns_re.captures_iter(&extern_fns).map(|c| c.extract()) {
-            // println!("name: {}", name);
-            fns.push((name, "() -> !"));
+        let re = regex::Regex::new(r#"extern \"C\" \{([^\{\}]+)\}"#).unwrap();
+        for (_, [extern_fns]) in re
+            .captures_iter(&vsched_api_file_content)
+            .map(|c| c.extract())
+        {
+            let fns_re = regex::Regex::new(r#"fn ([a-zA-Z0-9_]+)\(\) -> !;"#).unwrap();
+            for (_, [name]) in fns_re.captures_iter(&extern_fns).map(|c| c.extract()) {
+                // println!("name: {}", name);
+                fns.push((name.to_owned(), "() -> !".into()));
+            }
         }
     }
 
+    let mut traits = vec![];
     let interface_rs_path = Path::new(&config.src_dir)
         .join("src")
         .join("interface")
         .with_extension("rs");
     // println!("api.rs path: {}", api_rs_path.display());
-    let mut vsched_interface_file_content = fs::read_to_string(&interface_rs_path).unwrap();
-    vsched_interface_file_content = vsched_interface_file_content
-        .split('\n')
-        .filter(|s| !(*s).trim().starts_with("//"))
-        .collect();
-    vsched_interface_file_content = vsched_interface_file_content.split('\t').collect();
-    vsched_interface_file_content = vsched_interface_file_content.split("    ").collect();
-    // println!(
-    //     "cargo:warning=vsched_interface_file_content: {}",
-    //     vsched_interface_file_content
-    // );
+    if let Ok(mut vsched_interface_file_content) = fs::read_to_string(&interface_rs_path) {
+        vsched_interface_file_content = vsched_interface_file_content
+            .split('\n')
+            .filter(|s| !(*s).trim().starts_with("//"))
+            .collect();
+        vsched_interface_file_content = vsched_interface_file_content.split('\t').collect();
+        vsched_interface_file_content = vsched_interface_file_content.split("    ").collect();
+        // println!(
+        //     "cargo:warning=vsched_interface_file_content: {}",
+        //     vsched_interface_file_content
+        // );
 
-    let re = regex::Regex::new(r#"trait_interface\! \{pub trait ([a-zA-Z0-9_]+) \{([^\{\}]+)\}\}"#)
-        .unwrap();
-    // let re = regex::Regex::new(r#"pub trait ([a-zA-Z0-9_]+) \{([^\{\}]+)\}"#).unwrap();
-    // let re = regex::Regex::new(r#"pub trait ([a-zA-Z0-9_]+)\{(.)?"#).unwrap();
+        let re =
+            regex::Regex::new(r#"trait_interface\! \{pub trait ([a-zA-Z0-9_]+) \{([^\{\}]+)\}\}"#)
+                .unwrap();
+        // let re = regex::Regex::new(r#"pub trait ([a-zA-Z0-9_]+) \{([^\{\}]+)\}"#).unwrap();
+        // let re = regex::Regex::new(r#"pub trait ([a-zA-Z0-9_]+)\{(.)?"#).unwrap();
 
-    // 获取vDSO的 interface
-    let mut traits = vec![];
-    for (_, [name, fns]) in re
-        .captures_iter(&vsched_interface_file_content)
-        .map(|c| c.extract())
-    {
-        let mut fns_name = vec![];
-        let fns_name_re = regex::Regex::new(r#"fn ([a-zA-Z0-9_]+)\("#).unwrap();
-        fns_name_re
-            .captures_iter(&fns)
+        // 获取vDSO的 interface
+        for (_, [name, fns]) in re
+            .captures_iter(&vsched_interface_file_content)
             .map(|c| c.extract())
-            .for_each(|(_, [fn_name])| {
-                fns_name.push(fn_name);
-            });
-        traits.push((name, fns_name));
+        {
+            let mut fns_name = vec![];
+            let fns_name_re = regex::Regex::new(r#"fn ([a-zA-Z0-9_]+)\("#).unwrap();
+            fns_name_re
+                .captures_iter(&fns)
+                .map(|c| c.extract())
+                .for_each(|(_, [fn_name])| {
+                    fns_name.push(fn_name.to_owned());
+                });
+            traits.push((name.to_owned(), fns_name));
+        }
+        println!("cargo:warning=traits: {:?}", traits);
+        // panic!("pause");
     }
-    println!("cargo:warning=traits: {:?}", traits);
-    // panic!("pause");
 
     // pub use vdso库中的内容
     let pub_use_vdso_str = format!(

@@ -238,36 +238,38 @@ fn exported_symbols(config: &BuildConfig) -> Vec<String> {
     let mut symbols: Vec<String> = Vec::new();
 
     let api_rs_path = Path::new(&config.src_dir).join("src").join("api.rs");
-    let api_source = fs::read_to_string(&api_rs_path).unwrap();
-    let re = regex::Regex::new(
-        r#"(?s)#\[unsafe\(no_mangle\)\]\s*pub\s+extern\s+\"C\"\s+fn\s+([A-Za-z0-9_]+)\s*\("#,
-    )
-    .unwrap();
+    if let Ok(api_source) = fs::read_to_string(&api_rs_path) {
+        let re = regex::Regex::new(
+            r#"(?s)#\[unsafe\(no_mangle\)\]\s*pub\s+extern\s+\"C\"\s+fn\s+([A-Za-z0-9_]+)\s*\("#,
+        )
+        .unwrap();
 
-    let mut api_symbols: Vec<String> = re
-        .captures_iter(&api_source)
-        .map(|capture| capture[1].to_string())
-        .collect();
-    symbols.append(&mut api_symbols);
+        let mut api_symbols: Vec<String> = re
+            .captures_iter(&api_source)
+            .map(|capture| capture[1].to_string())
+            .collect();
+        symbols.append(&mut api_symbols);
 
-    let re = regex::Regex::new(r#"extern \"C\" \{([^\{\}]+)\}"#).unwrap();
-    for (_, [extern_fns]) in re.captures_iter(&api_source).map(|c| c.extract()) {
-        let fns_re = regex::Regex::new(r#"fn ([a-zA-Z0-9_]+)\(\) -> !;"#).unwrap();
-        for (_, [name]) in fns_re.captures_iter(&extern_fns).map(|c| c.extract()) {
-            // println!("name: {}", name);
-            symbols.push(name.into());
+        let re = regex::Regex::new(r#"extern \"C\" \{([^\{\}]+)\}"#).unwrap();
+        for (_, [extern_fns]) in re.captures_iter(&api_source).map(|c| c.extract()) {
+            let fns_re = regex::Regex::new(r#"fn ([a-zA-Z0-9_]+)\(\) -> !;"#).unwrap();
+            for (_, [name]) in fns_re.captures_iter(&extern_fns).map(|c| c.extract()) {
+                // println!("name: {}", name);
+                symbols.push(name.into());
+            }
         }
     }
 
     let interface_rs_path = Path::new(&config.src_dir).join("src").join("interface.rs");
-    let interface_source = fs::read_to_string(&interface_rs_path).unwrap();
-    let re = regex::Regex::new(r#"pub trait ([a-zA-Z0-9_]+) \{([^\{\}]+)\}"#).unwrap();
+    if let Ok(interface_source) = fs::read_to_string(&interface_rs_path) {
+        let re = regex::Regex::new(r#"pub trait ([a-zA-Z0-9_]+) \{([^\{\}]+)\}"#).unwrap();
 
-    let mut interface_symbols: Vec<String> = re
-        .captures_iter(&interface_source)
-        .map(|capture| format!("init_vtable_{}", capture.extract::<2>().1[0]))
-        .collect();
-    symbols.append(&mut interface_symbols);
+        let mut interface_symbols: Vec<String> = re
+            .captures_iter(&interface_source)
+            .map(|capture| format!("init_vtable_{}", capture.extract::<2>().1[0]))
+            .collect();
+        symbols.append(&mut interface_symbols);
+    }
 
     symbols
 }
