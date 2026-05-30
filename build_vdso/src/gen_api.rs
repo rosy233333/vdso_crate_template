@@ -94,7 +94,7 @@ fn api_rs_content(config: &BuildConfig) -> String {
             .captures_iter(&vsched_api_file_content)
             .map(|c| c.extract())
         {
-            // println!("name: {}\nargs: {}", name, args);
+            println!("name: {}\nargs: {}", name, args);
             fns.push((name.to_owned(), args.to_owned()));
         }
 
@@ -105,7 +105,7 @@ fn api_rs_content(config: &BuildConfig) -> String {
         {
             let fns_re = regex::Regex::new(r#"fn ([a-zA-Z0-9_]+)\(\) -> !;"#).unwrap();
             for (_, [name]) in fns_re.captures_iter(&extern_fns).map(|c| c.extract()) {
-                // println!("name: {}", name);
+                println!("name: {}", name);
                 fns.push((name.to_owned(), "() -> !".into()));
             }
         }

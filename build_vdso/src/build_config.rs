@@ -27,6 +27,8 @@ pub struct BuildConfig {
     pub toolchain: String,
     /// 页大小，默认为4096（0x1000）
     pub page_size: usize,
+    /// 编译时启用的feature
+    pub features: Vec<String>,
 }
 
 impl BuildConfig {
@@ -61,6 +63,7 @@ impl BuildConfig {
             api_lib_name: "lib".to_string() + package_name,
             toolchain: "nightly".to_string(),
             page_size: 0x1000,
+            features: Vec::new(),
         }
     }
 }

@@ -14,6 +14,10 @@ pub(crate) fn gen_wrapper(config: &BuildConfig) {
 }
 
 fn cargo_toml_content(config: &BuildConfig) -> String {
+    let mut features = config.features.join("\", \"");
+    if !config.features.is_empty() {
+        features = String::from("\"") + &features + "\"";
+    }
     let absolute_src_dir = fs::canonicalize(Path::new(&config.src_dir)).unwrap();
     format!(
         r#"[package]
@@ -30,10 +34,11 @@ panic = "abort"
 panic = "abort"
 
 [dependencies]
-{} = {{ path = "{}" }}
+{} = {{ path = "{}", features = [{}] }}
 "#,
         config.package_name,
-        absolute_src_dir.display()
+        absolute_src_dir.display(),
+        features
     )
 }
 

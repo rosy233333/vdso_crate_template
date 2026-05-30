@@ -138,6 +138,12 @@ fn build_so(config: &BuildConfig) {
         "--target-dir",
         &absolute_build_target_dir,
     ];
+    // // features
+    // let features_arg = config.features.join(",");
+    // if !config.features.is_empty() {
+    //     cargo_args.push("--features");
+    //     cargo_args.push(&features_arg);
+    // }
     if build_mode != "" {
         cargo_args.push(build_mode);
     }
