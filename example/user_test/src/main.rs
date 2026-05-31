@@ -45,7 +45,7 @@ impl MemIf for MemImpl {
     #[doc = " "]
     #[doc = " 保证size为build_vdso传入的config.page_size的整数倍。"]
     #[doc = " 要求返回的地址也为config.page_size的整数倍。"]
-    fn valloc(vspace: usize, size: usize) -> *mut u8 {
+    fn valloc(_vspace: usize, size: usize) -> *mut u8 {
         let mut map = MmapMut::map_anon(size).unwrap();
         let ptr = map.as_mut_ptr();
         mem::forget(map);
@@ -57,7 +57,7 @@ impl MemIf for MemImpl {
     #[doc = " 保证size为build_vdso传入的config.page_size的整数倍。"]
     #[doc = ""]
     #[doc = " 若需要实现vDSO和vVAR在多地址空间的共享，则需要在分配时使这块空间可被共享（即，可被多次`map`）。"]
-    fn ppage_alloc(size: usize) -> PhysPagePtr {
+    fn ppage_alloc(_size: usize) -> PhysPagePtr {
         0
     }
 
@@ -68,7 +68,14 @@ impl MemIf for MemImpl {
     #[doc = " 保证vaddr对齐到build_vdso传入的config.page_size；len为config.page_size的整数倍。"]
     #[doc = ""]
     #[doc = " `flags`可能包含：READ、WRITE、EXECUTE、USER。"]
-    fn map(vspace: usize, vaddr: *mut u8, ppage: PhysPagePtr, size: usize, flags: MappingFlags) {
+    fn map(
+        _vspace: usize,
+        vaddr: *mut u8,
+        _ppage: PhysPagePtr,
+        size: usize,
+        flags: MappingFlags,
+        _shared: bool,
+    ) {
         let mut libc_flag = libc::PROT_READ;
         if flags.contains(MappingFlags::EXECUTE) {
             libc_flag |= libc::PROT_EXEC;
@@ -86,7 +93,7 @@ impl MemIf for MemImpl {
     #[doc = " 重新设置已映射好的，虚拟首地址为`vspace`区域的权限。"]
     #[doc = " "]
     #[doc = " 保证vaddr对齐到build_vdso传入的config.page_size。"]
-    fn change_protect(vspace: usize, vaddr: *mut u8, size: usize, flags: MappingFlags) {
+    fn change_protect(_vspace: usize, vaddr: *mut u8, size: usize, flags: MappingFlags) {
         let mut libc_flag = libc::PROT_READ;
         if flags.contains(MappingFlags::EXECUTE) {
             libc_flag |= libc::PROT_EXEC;
@@ -103,7 +110,7 @@ impl MemIf for MemImpl {
 
     #[doc = " 获取`vspace`空间中`vaddr`地址对应的内核虚拟地址。"]
     #[doc = " （也就是当前代码可以直接访问的地址）"]
-    fn get_kernel_vaddr(vspace: usize, vaddr: *mut u8) -> *mut u8 {
+    fn get_kernel_vaddr(_vspace: usize, vaddr: *mut u8) -> *mut u8 {
         vaddr
     }
 
@@ -112,7 +119,7 @@ impl MemIf for MemImpl {
     #[doc = " 如果物理页使用RAII管理，则需调用其`clone`方法。"]
     #[doc = " "]
     #[doc = " 如果物理页不使用RAII管理，则可以直接返回参数。"]
-    fn ppage_clone(ppage: PhysPagePtr) -> PhysPagePtr {
+    fn ppage_clone(_ppage: PhysPagePtr) -> PhysPagePtr {
         0
     }
 }

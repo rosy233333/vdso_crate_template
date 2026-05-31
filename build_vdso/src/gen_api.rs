@@ -534,12 +534,12 @@ pub trait MemIf {
 
     /// 从`alloc`返回的虚存区域中，映射其中一块到某个物理页面并设置权限。
     /// 
-    /// 被映射的物理页面可能和其它地址空间共享，也可能由这个地址空间独占。
+    /// 被映射的物理页面可能和其它地址空间共享，也可能由这个地址空间独占。（由`shared`指定）
     /// 
     /// 保证vaddr对齐到build_vdso传入的config.page_size；len为config.page_size的整数倍。
     ///
     /// `flags`可能包含：READ、WRITE、EXECUTE、USER。
-    fn map(vspace: usize, vaddr: *mut u8, ppage: PhysPagePtr, size: usize, flags: MappingFlags);
+    fn map(vspace: usize, vaddr: *mut u8, ppage: PhysPagePtr, size: usize, flags: MappingFlags, shared: bool);
 
     /// 重新设置已映射好的，虚拟首地址为`vspace`区域的权限。
     /// 
@@ -715,7 +715,26 @@ static KERNEL_VDSO_REGIONS: LazyInit<Vec<(usize, PhysPagePtr, usize, MappingFlag
 /// 
 /// 该函数的返回值为本次映射的vdso首地址（vspace中的虚拟地址）。
 pub fn map_so(vspace: usize) -> *mut u8 {
-    let vbase = call_interface!(MemIf::valloc(vspace, VVAR_SIZE + VDSO_SIZE));
+    let vdso_elf = xmas_elf::ElfFile::new(VDSO).expect("Error parsing app ELF file.");
+    if let Some(interp) = vdso_elf
+        .program_iter()
+        .find(|ph| ph.get_type() == Ok(xmas_elf::program::Type::Interp))
+    {
+        let interp = match interp.get_data(&vdso_elf) {
+            Ok(SegmentData::Undefined(data)) => data,
+            _ => panic!("Invalid data in Interp Elf Program Header"),
+        };
+
+        let interp_path = from_utf8(interp).expect("Interpreter path isn't valid UTF-8");
+        // remove trailing '\0'
+        let _interp_path = interp_path.trim_matches(char::from(0)).to_string();
+        #[cfg(feature = "log")]
+        log::debug!("Interpreter path: {:?}", _interp_path);
+    }
+    let segments = elf_parser::get_elf_segments(&vdso_elf, Some(0));
+    let vdso_size: usize = segments.iter().map(|seg| ((seg.size + PAGES_SIZE - 1) / PAGES_SIZE) * PAGES_SIZE).sum();
+
+    let vbase = call_interface!(MemIf::valloc(vspace, VVAR_SIZE + vdso_size));
     let mut regions = Vec::new();
 
     // vVAR初始化
@@ -744,14 +763,14 @@ pub fn map_so(vspace: usize) -> *mut u8 {
     };
     #[cfg(feature = "log")]
     log::info!(
-        "map: vspace: 0x{:016x}, vaddr: 0x{:016x}, ppage_struct_ptr: 0x{:016x}, size: 0x{:x} {:?}",
+        "map: vspace: 0x{:016x}, vaddr: 0x{:016x}, ppage_struct_ptr: 0x{:016x}, size: 0x{:x} {:?}, shared: true",
         vspace,
         vaddr as usize,
         ppage,
         VVAR_SIZE,
         flags
     );
-    call_interface!(MemIf::map(vspace, vaddr, ppage, VVAR_SIZE, flags));
+    call_interface!(MemIf::map(vspace, vaddr, ppage, VVAR_SIZE, flags, true));
     // 初始化vvar，只在首次调用时写入数据，后续调用时内核加载的vVAR页面已经包含了正确的数据。
     // 只在首次调用时，存储region信息
     if !KERNEL_VDSO_REGIONS.is_inited() {
@@ -762,22 +781,6 @@ pub fn map_so(vspace: usize) -> *mut u8 {
     // vDSO初始化
     #[cfg(feature = "log")]
     log::info!("mapping vDSO...");
-    let vdso_elf = xmas_elf::ElfFile::new(VDSO).expect("Error parsing app ELF file.");
-    if let Some(interp) = vdso_elf
-        .program_iter()
-        .find(|ph| ph.get_type() == Ok(xmas_elf::program::Type::Interp))
-    {
-        let interp = match interp.get_data(&vdso_elf) {
-            Ok(SegmentData::Undefined(data)) => data,
-            _ => panic!("Invalid data in Interp Elf Program Header"),
-        };
-
-        let interp_path = from_utf8(interp).expect("Interpreter path isn't valid UTF-8");
-        // remove trailing '\0'
-        let _interp_path = interp_path.trim_matches(char::from(0)).to_string();
-        #[cfg(feature = "log")]
-        log::debug!("Interpreter path: {:?}", _interp_path);
-    }
     let elf_base_addr = Some((vbase as usize) + VVAR_SIZE);
     let segments = elf_parser::get_elf_segments(&vdso_elf, elf_base_addr);
     let relocate_pairs = elf_parser::get_relocate_pairs(&vdso_elf, elf_base_addr);
@@ -811,13 +814,13 @@ pub fn map_so(vspace: usize) -> *mut u8 {
             (ppage, ppage_clone)
         } else {
             // 后续调用
-            if segment.flags.contains(MappingFlags::EXECUTE) {
-                // 代码段，使用已加载的vDSO
+            if !segment.flags.contains(MappingFlags::WRITE) {
+                // 代码段/只读数据段，使用已加载的vDSO
                 let origin_ppage = KERNEL_VDSO_REGIONS.get().unwrap()[index].1;
                 let ppage = call_interface!(MemIf::ppage_clone(origin_ppage));
                 (ppage, ppage)
             } else {
-                // 数据段，重新分配物理页，且后续需要加载和重定位
+                // 读写数据段，重新分配物理页，且后续需要加载和重定位
                 let ppage = call_interface!(MemIf::ppage_alloc(size));
                 (ppage, ppage)
             }
@@ -831,16 +834,18 @@ pub fn map_so(vspace: usize) -> *mut u8 {
         };
         // 首先需以WRITE和!USER权限映射，以便加载和重定位；加载和重定位完成后再设置为最终权限。
         let flags_with_write = flags | MappingFlags::WRITE & !MappingFlags::USER;
+        let shared = !segment.flags.contains(MappingFlags::WRITE);
         #[cfg(feature = "log")]
         log::info!(
-            "map: vspace: 0x{:016x}, vaddr: 0x{:016x}, ppage_struct_ptr: 0x{:016x}, size: 0x{:x} {:?}",
+            "map: vspace: 0x{:016x}, vaddr: 0x{:016x}, ppage_struct_ptr: 0x{:016x}, size: 0x{:x} {:?}, shared: {}",
             vspace,
             vaddr as usize,
             ppage,
             size,
-            flags_with_write
+            flags_with_write,
+            shared,
         );
-        call_interface!(MemIf::map(vspace, vaddr, ppage, size, flags_with_write));
+        call_interface!(MemIf::map(vspace, vaddr, ppage, size, flags_with_write, shared));
         if !KERNEL_VDSO_REGIONS.is_inited() || !segment.flags.contains(MappingFlags::EXECUTE) {
             // “首次调用”或“后续调用的数据段”，加载和重定位vDSO
             // 因为在“后续调用的数据段”情况下，虚拟地址不一定能直接访问，因此需要转化。
