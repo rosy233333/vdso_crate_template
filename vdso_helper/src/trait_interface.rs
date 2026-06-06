@@ -43,6 +43,7 @@ macro_rules! trait_interface {
 
         $crate::paste::paste! {
             #[allow(missing_docs)]
+            #[derive(Debug)]
             pub(crate) struct [<$name VirtImpl>];
         }
 
