@@ -348,13 +348,16 @@ pub fn {}{} {{
     if let Some(f) = unsafe {{ VDSO_VTABLE.{} }} {{
         #[cfg(feature = "log")]
         log::debug!("Calling {} at 0x{{:x}}.", f as *const () as usize);
-        f({})
+        let res = f({});
+        #[cfg(feature = "log")]
+        log::debug!("Returned from {}.");
+        res
     }} else {{
         panic!("{} is not initialized")
     }}
 }}
 "#,
-            name, args, name, name, fn_args, name
+            name, args, name, name, fn_args, name, name
         ));
     }
 
@@ -374,13 +377,16 @@ pub fn {}<T:{}>() {{
     if let Some(f) = unsafe {{ VDSO_VTABLE.{} }} {{
         #[cfg(feature = "log")]
         log::debug!("Calling {} at 0x{{:x}}.", f as *const () as usize);
-        f({})
+        let res = f({});
+        #[cfg(feature = "log")]
+        log::debug!("Returned from {}.");
+        res
     }} else {{
         panic!("{} is not initialized")
     }}
 }}
 "#,
-            init_fn_name, name, init_fn_name, init_fn_name, fn_args, init_fn_name
+            init_fn_name, name, init_fn_name, init_fn_name, fn_args, init_fn_name, init_fn_name
         ));
     }
 
