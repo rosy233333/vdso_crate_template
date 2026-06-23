@@ -29,6 +29,10 @@ pub struct BuildConfig {
     pub page_size: usize,
     /// 编译时启用的feature
     pub features: Vec<String>,
+    /// 是否启用vdso内部的log。
+    ///
+    /// log等级不在此处指定，而由主编译单元控制。
+    pub log: bool,
 }
 
 impl BuildConfig {
@@ -64,6 +68,7 @@ impl BuildConfig {
             toolchain: "nightly".to_string(),
             page_size: 0x1000,
             features: Vec::new(),
+            log: false,
         }
     }
 }

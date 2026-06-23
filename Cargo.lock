@@ -425,6 +425,7 @@ name = "vdso_helper"
 version = "0.1.0"
 dependencies = [
  "lazyinit",
+ "log",
  "paste",
  "vsched_hal",
 ]

@@ -6,9 +6,14 @@
 #![no_std]
 #![deny(missing_docs)]
 
+#[cfg(feature = "log")]
+pub mod log_init;
 pub mod mut_cfg;
 pub mod trait_interface;
 pub mod vvar_data;
 
 pub use lazyinit;
 pub use paste;
+
+#[cfg(feature = "log")]
+pub use log;

@@ -1,7 +1,7 @@
 use core::mem::MaybeUninit;
 use core::sync::atomic::Ordering;
 
-use vdso_helper::get_vvar_data;
+use vdso_helper::{get_vvar_data, log};
 
 use crate::{interface, ArgumentExample, PRIVATE_DATA_EXAMPLE};
 
@@ -41,6 +41,15 @@ pub extern "C" fn test_args(
 #[unsafe(no_mangle)]
 pub extern "C" fn test_call(ptr: *mut ()) {
     interface::test_call(ptr);
+}
+
+#[unsafe(no_mangle)]
+pub extern "C" fn test_log() {
+    log::error!("Hello, this is a log within the vDSO!");
+    log::warn!("Hello, this is a log within the vDSO!");
+    log::info!("Hello, this is a log within the vDSO!");
+    log::debug!("Hello, this is a log within the vDSO!");
+    log::trace!("Hello, this is a log within the vDSO!");
 }
 
 // #[unsafe(no_mangle)]

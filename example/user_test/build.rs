@@ -18,5 +18,6 @@ fn main() {
     config.out_dir = String::from("../../output");
     // config.toolchain = String::from("nightly-2025-09-30");
     config.verbose = 2;
+    config.log = true;
     build_vdso(&config);
 }

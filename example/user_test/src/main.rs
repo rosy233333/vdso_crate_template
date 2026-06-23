@@ -1,8 +1,9 @@
-use std::mem;
+use std::{fmt::Arguments, mem};
 
 // use crate::map::map_vdso;
 // use libvdsoexample::{interface::TestIf, *};
 use libvdsoexample::*;
+use log::Log;
 use memmap2::MmapMut;
 
 // mod map;
@@ -188,6 +189,6 @@ fn main() {
     let mut test_impl = TestImpl(10);
     let ptr = &mut test_impl as *mut TestImpl as *mut ();
     test_call(ptr);
+    test_log();
     println!("Test passed!");
-    // drop(map);
 }

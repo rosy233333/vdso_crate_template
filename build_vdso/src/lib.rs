@@ -243,6 +243,9 @@ fn version_script_content(config: &BuildConfig) -> String {
 fn exported_symbols(config: &BuildConfig) -> Vec<String> {
     let mut symbols: Vec<String> = Vec::new();
     symbols.push("panic_loop".into());
+    if config.log {
+        symbols.push("init_log".into());
+    }
 
     let api_rs_path = Path::new(&config.src_dir).join("src").join("api.rs");
     if let Ok(api_source) = fs::read_to_string(&api_rs_path) {

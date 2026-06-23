@@ -4,5 +4,5 @@ version.workspace = true
 edition.workspace = true
 
 [dependencies]
-vdso_helper = { workspace = true }
+vdso_helper = { workspace = true, features = ["log"] }
 lazyinit = "0.2"

@@ -13,3 +13,8 @@ edition.workspace = true
 hal = { git = "https://github.com/rosy233333/vsched_hal.git", package = "vsched_hal" }
 lazyinit = "0.2"
 paste = "1.0"
+log = { version = "0.4", optional = true }
+
+[features]
+log = ["dep:log"]
+default = []

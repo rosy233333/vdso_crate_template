@@ -31,7 +31,7 @@ edition = "2021"
 
 [dependencies]
 {} = {{ path = "{}" }}
-log = {{ version = "0.4", optional = true }}
+log = {{ version = "0.4" }}
 crate_interface = "0.2"
 page_table_entry = "0.5.7"
 include_bytes_aligned = "0.1.4"
@@ -40,7 +40,7 @@ elf_parser = {{ git = "https://github.com/rosy233333/elf_parser.git" }}
 lazyinit = "0.2"
 
 [features]
-log = ["dep:log"]
+log = []
 default = []
 "#,
         config.api_lib_name,
@@ -86,9 +86,9 @@ fn api_rs_content(config: &BuildConfig) -> String {
         // println!("vsched_api_file_content: {}", vsched_api_file_content);
 
         let re = regex::Regex::new(
-        r#"#\[unsafe\(no_mangle\)\]pub extern \"C\" fn ([a-zA-Z0-9_]+)(\([a-zA-Z0-9_:]?[^\{]*\)[->]?[^\{]*) \{"#,
-    )
-    .unwrap();
+            r#"#\[unsafe\(no_mangle\)\]pub extern \"C\" fn ([a-zA-Z0-9_]+)(\([a-zA-Z0-9_:]?[^\{]*\)[->]?[^\{]*) \{"#,
+        )
+        .unwrap();
 
         for (_, [name, args]) in re
             .captures_iter(&vsched_api_file_content)
@@ -108,6 +108,10 @@ fn api_rs_content(config: &BuildConfig) -> String {
                 println!("name: {}", name);
                 fns.push((name.to_owned(), "() -> !".into()));
             }
+        }
+
+        if config.log {
+            fns.push(("init_log".into(), "(logger_fat_ptr: u128)".into()));
         }
     }
 
@@ -308,9 +312,30 @@ fn api_rs_content(config: &BuildConfig) -> String {
 pub fn load_and_init(vspace: usize) {
     let vdso = crate::map_so(vspace);
     unsafe{ init_vdso_vtable(vdso as _) };
+    init_vdso_log();
 }
 "#,
     );
+
+    let init_vdso_log_body = if config.log {
+        r#"
+    let logger = log::logger();
+    let fat_ptr: u128 = unsafe { core::mem::transmute(logger) };
+    init_log(fat_ptr);
+"#
+    } else {
+        ""
+    };
+
+    let init_vdso_log_fn = format!(
+        r#"
+fn init_vdso_log() {{{}}}
+
+"#,
+        init_vdso_log_body
+    );
+
+    fn_init_vdso_vtable_str.push_str(&init_vdso_log_fn);
 
     // 构建给内核和用户运行时使用的接口
     let mut apis = vec![];
