@@ -14,13 +14,13 @@ use log::Log;
 // /// fn flush(&Logger)
 // static FLUSH: AtomicUsize = AtomicUsize::new(0);
 
-static LOGGER: LazyInit<u128> = LazyInit::new();
+static LOGGER: LazyInit<(usize, usize)> = LazyInit::new();
 
 /// 初始化vdso中的log。
 ///
 /// 用户不需手动调用此函数，此函数会在初始化vdso时自动调用。
 #[no_mangle]
-pub extern "C" fn init_log(logger_fat_ptr: u128) {
+pub extern "C" fn init_log(logger_fat_ptr: (usize, usize)) {
     LOGGER.init_once(logger_fat_ptr);
 
     log::set_logger(&LOGGER_VIRT_IMPL).unwrap();

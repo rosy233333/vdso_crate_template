@@ -111,7 +111,7 @@ fn api_rs_content(config: &BuildConfig) -> String {
         }
 
         if config.log {
-            fns.push(("init_log".into(), "(logger_fat_ptr: u128)".into()));
+            fns.push(("init_log".into(), "(logger_fat_ptr: (usize, usize))".into()));
         }
     }
 
@@ -320,7 +320,7 @@ pub fn load_and_init(vspace: usize) {
     let init_vdso_log_body = if config.log {
         r#"
     let logger = log::logger();
-    let fat_ptr: u128 = unsafe { core::mem::transmute(logger) };
+    let fat_ptr: (usize, usize) = unsafe { core::mem::transmute(logger) };
     init_log(fat_ptr);
 "#
     } else {
