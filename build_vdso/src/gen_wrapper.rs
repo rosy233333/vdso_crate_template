@@ -14,11 +14,12 @@ pub(crate) fn gen_wrapper(config: &BuildConfig) {
 }
 
 fn cargo_toml_content(config: &BuildConfig) -> String {
-    let mut features = config.features.join("\", \"");
+    let mut vdso_features = config.features.join("\", \"");
     if !config.features.is_empty() {
-        features = String::from("\"") + &features + "\"";
+        vdso_features = String::from("\"") + &vdso_features + "\"";
     }
     let absolute_src_dir = fs::canonicalize(Path::new(&config.src_dir)).unwrap();
+    let features = if config.log { " \"log\" " } else { "" };
     format!(
         r#"[package]
 name = "vdso_wrapper"
@@ -35,9 +36,15 @@ panic = "abort"
 
 [dependencies]
 {} = {{ path = "{}", features = [{}] }}
+log = {{ version = "0.4", optional = true }}
+
+[features]
+log = ["dep:log"]
+default = [{}]
 "#,
         config.package_name,
         absolute_src_dir.display(),
+        vdso_features,
         features
     )
 }
@@ -49,7 +56,9 @@ fn lib_rs_content(config: &BuildConfig) -> String {
 pub use {}::*;
 
 #[panic_handler]
-fn panic(_info: &core::panic::PanicInfo) -> ! {{
+fn panic(info: &core::panic::PanicInfo) -> ! {{
+    #[cfg(feature = "log")]
+    log::error!("panic in vDSO: {{:?}}", info);
     panic_loop();
 }}
 
