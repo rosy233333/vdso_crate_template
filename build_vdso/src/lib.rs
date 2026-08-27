@@ -105,8 +105,7 @@ fn build_so(config: &BuildConfig) {
     // 获取是否为release模式
     let build_mode = match config.mode.as_str() {
         "debug" => "",
-        "release" => "--release",
-        _ => panic!("Unsupported mode"),
+        _ => "--release",
     };
     // 获取编译输出的冗长程度
     let build_verbose = match config.verbose {
@@ -162,11 +161,16 @@ fn build_so(config: &BuildConfig) {
 
     // wrappper输出目录
     let wrapper_dir = out_dir.join("vdso_wrapper");
+
+    let mut rustflags = String::from("-C force-frame-pointers=yes");
+    if config.mode == "release_with_debug_info" {
+        rustflags += " -g";
+    }
     // 构建编译命令
     cargo
         .current_dir(&wrapper_dir)
         .env("ARCH", &config.arch)
-        .env("RUSTFLAGS", "-C force-frame-pointers=yes")
+        .env("RUSTFLAGS", &rustflags)
         .args(cargo_args);
     println!("----------------cargo command----------------");
     println!("{:?}", &cargo);
@@ -181,9 +185,13 @@ fn build_so(config: &BuildConfig) {
     }
 
     // 获取.a路径
+    let mode_path = match config.mode.as_str() {
+        "debug" => "debug",
+        _ => "release",
+    };
     let src_file = Path::new(&absolute_build_target_dir)
         .join(build_target)
-        .join(&config.mode)
+        .join(mode_path)
         .join("libvdso_wrapper")
         .with_extension("a")
         .display()

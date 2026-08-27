@@ -1,7 +1,8 @@
-use core::mem::MaybeUninit;
 use core::sync::atomic::Ordering;
+use core::task::Poll;
+use core::{mem::MaybeUninit, task::Context};
 
-use vdso_helper::{get_vvar_data, log};
+use vdso_helper::{async_api, get_vvar_data, log};
 
 use crate::{interface, ArgumentExample, PRIVATE_DATA_EXAMPLE};
 
@@ -55,4 +56,53 @@ pub extern "C" fn test_log() {
 // #[unsafe(no_mangle)]
 // pub extern "C" fn init_TestIf_table(test_fn1: usize, test_fn2: usize, test_fn3: usize) {
 //     interface::TestIf_TABLE.init_once([test_fn1, test_fn2, test_fn3]);
+// }
+
+#[repr(C)]
+pub struct TestYieldFuture {
+    arg: usize,
+    yielded: bool,
+}
+
+impl TestYieldFuture {
+    pub fn new(arg: usize) -> Self {
+        Self {
+            arg,
+            yielded: false,
+        }
+    }
+}
+
+#[unsafe(no_mangle)]
+pub extern "C" fn test_yield_poll(fut: *mut TestYieldFuture, _cx: &mut Context<'_>) -> Poll<()> {
+    if unsafe { (*fut).yielded } {
+        Poll::Ready(())
+    } else {
+        unsafe { (*fut).yielded = true };
+        Poll::Pending
+    }
+}
+
+async_api!(test_yield, TestYieldFuture, test_yield_poll);
+
+// #[repr(transparent)]
+// pub struct TestYieldFutureWrapper(TestYieldFuture);
+
+// impl Future for TestYieldFutureWrapper {
+//     type Output = ();
+
+//     fn poll(self: Pin<&mut Self>, cx: &mut Context<'_>) -> Poll<Self::Output> {
+//         unsafe {
+//             test_yield_poll(
+//                 core::mem::transmute::<*mut TestYieldFutureWrapper, *mut TestYieldFuture>(
+//                     self.get_mut(),
+//                 ),
+//                 cx,
+//             )
+//         }
+//     }
+// }
+
+// pub async fn test_yield(arg: usize) -> () {
+//     TestYieldFutureWrapper(TestYieldFuture::new(arg)).await
 // }

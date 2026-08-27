@@ -6,6 +6,7 @@
 #![no_std]
 #![deny(missing_docs)]
 
+pub mod async_api;
 #[cfg(feature = "log")]
 pub mod log_init;
 pub mod mut_cfg;

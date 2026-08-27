@@ -415,6 +415,67 @@ pub fn {}<T:{}>() {{
         ));
     }
 
+    // 异步api部分
+    if let Ok(mut vsched_api_file_content) = fs::read_to_string(&api_rs_path) {
+        let re = regex::Regex::new(
+            r#"async_api\!\(([a-zA-Z0-9_]+), ([a-zA-Z0-9_]+), ([a-zA-Z0-9_]+)\);"#,
+        )
+        .unwrap();
+        for (_, [async_fn_name, fut_struct_name, poll_fn_name]) in re
+            .captures_iter(&vsched_api_file_content)
+            .map(|c| c.extract())
+        {
+            let type_def_str = format!(
+                r#"
+#[repr(transparent)]
+pub struct {}Wrapper({});
+"#,
+                fut_struct_name, fut_struct_name
+            );
+
+            let output_type: String = todo!();
+            let future_impl_str = format!(
+                r#"
+impl Future for {}Wrapper {{
+    type Output = {};
+
+    fn poll(self: Pin<&mut Self>, cx: &mut Context<'_>) -> Poll<Self::Output> {{
+        unsafe {{
+            {}(
+                core::mem::transmute::<*mut {}Wrapper, *mut {}>(
+                    self.get_mut(),
+                ),
+                cx,
+            )
+        }}
+    }}
+}}
+"#,
+                fut_struct_name, output_type, poll_fn_name, fut_struct_name, fut_struct_name,
+            );
+
+            let new_fn_arg: String = todo!();
+            let new_fn_arg_without_type: String = todo!();
+            let async_fn_str = format!(
+                r#"
+pub async fn {}({}) -> {} {{
+    {}Wrapper({}::new({})).await
+}}
+"#,
+                async_fn_name,
+                new_fn_arg,
+                output_type,
+                fut_struct_name,
+                fut_struct_name,
+                new_fn_arg_without_type
+            );
+
+            apis.push(type_def_str);
+            apis.push(future_impl_str);
+            apis.push(async_fn_str);
+        }
+    }
+
     // println!("apis: {:?}", apis);
 
     let mut api_content = String::new();

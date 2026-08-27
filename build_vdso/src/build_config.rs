@@ -15,7 +15,7 @@ pub struct BuildConfig {
     pub out_dir: String,
     /// 生成的vDSO库的soname，默认为"lib" + package_name
     pub so_name: String,
-    /// 编译模式，"debug"或"release"
+    /// 编译模式，"debug"、"release"或"release_with_debug_info"
     pub mode: String,
     /// 冗长度，0表示不冗长，1表示冗长输出，2表示更冗长输出
     pub verbose: usize,
