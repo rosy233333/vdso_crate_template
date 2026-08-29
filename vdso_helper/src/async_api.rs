@@ -53,6 +53,8 @@
 ///         Poll::Pending
 ///     }
 /// }
+///
+/// async_api!(test_yield, TestYieldFuture, test_yield_poll);
 /// ```
 ///
 /// `build_vdso`生成的内容：
