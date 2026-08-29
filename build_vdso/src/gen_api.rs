@@ -433,13 +433,28 @@ pub struct {}Wrapper({});
                 fut_struct_name, fut_struct_name
             );
 
-            let output_type: String = todo!();
+            // 从poll_fn_name的函数的返回值中提取的类型（只包括Poll里面的部分）
+            let poll_fn_re =
+                regex::Regex::new(r#"fn ([a-zA-Z0-9_]+)(\([a-zA-Z0-9_:]?[^\{]*\)[->]?[^\{]*)"#)
+                    .unwrap();
+            let (_, [poll_fn_name_in_src, poll_fn_args_and_ret]) = poll_fn_re
+                .captures_iter(&vsched_api_file_content)
+                .map(|c| c.extract())
+                .find(|(_, [name, _])| *name == poll_fn_name)
+                .unwrap_or_else(|| {
+                    panic!(
+                        "async_api! 中指定的 poll 函数 {} 未在 api.rs 中找到",
+                        poll_fn_name
+                    )
+                });
+            assert_eq!(poll_fn_name_in_src, poll_fn_name);
+            let output_type: String = poll_output_type(poll_fn_args_and_ret);
             let future_impl_str = format!(
                 r#"
-impl Future for {}Wrapper {{
+impl core::future::Future for {}Wrapper {{
     type Output = {};
 
-    fn poll(self: Pin<&mut Self>, cx: &mut Context<'_>) -> Poll<Self::Output> {{
+    fn poll(self: core::pin::Pin<&mut Self>, cx: &mut Context<'_>) -> Poll<Self::Output> {{
         unsafe {{
             {}(
                 core::mem::transmute::<*mut {}Wrapper, *mut {}>(
@@ -454,8 +469,21 @@ impl Future for {}Wrapper {{
                 fut_struct_name, output_type, poll_fn_name, fut_struct_name, fut_struct_name,
             );
 
-            let new_fn_arg: String = todo!();
-            let new_fn_arg_without_type: String = todo!();
+            // 从fut_struct_name的new函数的实现中提取的参数（包含参数名和类型）
+            let new_fn_arg: String = new_fn_args(&vsched_api_file_content, fut_struct_name);
+            // 与new_fn_arg相同，但只包含参数名
+            let new_fn_arg_without_type: String = new_fn_arg
+                .split(',')
+                .map(|arg| {
+                    let arg = arg.trim();
+                    match arg.find(':') {
+                        Some(idx) => arg[..idx].trim(),
+                        _ => "",
+                    }
+                })
+                .filter(|ident| !ident.is_empty())
+                .collect::<Vec<_>>()
+                .join(", ");
             let async_fn_str = format!(
                 r#"
 pub async fn {}({}) -> {} {{
@@ -490,6 +518,50 @@ pub async fn {}({}) -> {} {{
 
     api_content
 }
+
+/// 从`fn xxx(...) -> Poll<T> {`的函数签名中提取`Poll`内的类型`T`。
+fn poll_output_type(fn_args_and_ret: &str) -> String {
+    let ret_type = fn_args_and_ret
+        .split("->")
+        .nth(1)
+        .unwrap_or_else(|| panic!("poll 函数缺少返回值: {}", fn_args_and_ret))
+        .trim();
+    let open = ret_type
+        .find("Poll<")
+        .unwrap_or_else(|| panic!("poll 函数的返回值不是 Poll<T>: {}", fn_args_and_ret));
+    let inner_start = open + "Poll<".len();
+    let mut depth = 0usize;
+    for (idx, ch) in ret_type[inner_start..].char_indices() {
+        match ch {
+            '<' => depth += 1,
+            '>' if depth == 0 => {
+                return ret_type[inner_start..inner_start + idx].to_string();
+            }
+            '>' => depth -= 1,
+            _ => {}
+        }
+    }
+    panic!("Poll< 缺少匹配的 >: {}", fn_args_and_ret);
+}
+
+/// 从`impl StructName { ... pub fn new(...) ... }`中提取`new`函数的参数列表。
+fn new_fn_args(api_content: &str, fut_struct_name: &str) -> String {
+    let impl_re =
+        regex::Regex::new(&format!(r#"impl {} \{{([^\}}]+)\}}"#, fut_struct_name)).unwrap();
+    for (_, [impl_body]) in impl_re.captures_iter(api_content).map(|c| c.extract()) {
+        println!("impl_body: {}", impl_body);
+        let new_fn_re = regex::Regex::new(r#"fn new\(([^\)]*)\)"#).unwrap();
+        if let Some(c) = new_fn_re.captures(impl_body) {
+            return c[1].trim().to_string();
+        }
+    }
+    panic!(
+        "async_api! 中指定的 future 结构体 {} 的 new 函数未在 api.rs 中找到",
+        fut_struct_name
+    );
+}
+
+// codex resume 01a043f0-a2f1-7742-9b86-96dd29c95cfb
 
 const INIT_VDSO_VTABLE_STR: &str = r#"
 /// 在自身不加载vDSO，而是已经映射了vDSO的地址空间（通常是用户进程）中调用，传入vDSO的首地址以初始化VTABLE。

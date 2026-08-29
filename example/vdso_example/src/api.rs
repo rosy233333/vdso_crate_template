@@ -1,6 +1,6 @@
 use core::sync::atomic::Ordering;
-use core::task::Poll;
-use core::{mem::MaybeUninit, task::Context};
+pub use core::task::{Poll, Context};
+use core::{mem::MaybeUninit};
 
 use vdso_helper::{async_api, get_vvar_data, log};
 
@@ -58,6 +58,8 @@ pub extern "C" fn test_log() {
 //     interface::TestIf_TABLE.init_once([test_fn1, test_fn2, test_fn3]);
 // }
 
+// ---build_vdso的异步api部分需要读取的内容---
+
 #[repr(C)]
 pub struct TestYieldFuture {
     arg: usize,
@@ -84,6 +86,8 @@ pub extern "C" fn test_yield_poll(fut: *mut TestYieldFuture, _cx: &mut Context<'
 }
 
 async_api!(test_yield, TestYieldFuture, test_yield_poll);
+
+// ---build_vdso的异步api部分需要生成的内容---
 
 // #[repr(transparent)]
 // pub struct TestYieldFutureWrapper(TestYieldFuture);
