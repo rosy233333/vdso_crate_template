@@ -454,7 +454,7 @@ pub struct {}Wrapper({});
 impl core::future::Future for {}Wrapper {{
     type Output = {};
 
-    fn poll(self: core::pin::Pin<&mut Self>, cx: &mut Context<'_>) -> Poll<Self::Output> {{
+    fn poll(self: core::pin::Pin<&mut Self>, cx: &mut core::task::Context<'_>) -> core::task::Poll<Self::Output> {{
         unsafe {{
             {}(
                 core::mem::transmute::<*mut {}Wrapper, *mut {}>(

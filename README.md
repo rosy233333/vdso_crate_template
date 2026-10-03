@@ -74,6 +74,8 @@ pub extern "C" fn 函数名(参数) -> 返回值 {
 5. 通过API库，调用`vDSO`的API。
 6. 创建用户进程时，将`vDSO`和`vVAR`映射到其地址空间，并向用户进程传递`vDSO`的基址。用户进程即可通过第4、5步的方式使用vDSO。
 
+在构建时需要注意：因为`vDSO`库并非实际编译的根crate（根crate为构建中输出的`vdso_wrapper`），因此无法通过`Cargo.lock`固定依赖版本。对版本有需求的依赖只能在`Cargo.toml`中使用`version`或`rev`显式声明版本。
+
 ## vDSO接口的说明与限制
 
 ![](./doc/assets/vdso库、api和so的关系.png)
