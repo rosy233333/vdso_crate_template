@@ -346,15 +346,16 @@ fn init_vdso_log() {{{}}}
         let mut fn_args = String::new();
         for (_, [ident_ty]) in re.captures_iter(args).map(|c| c.extract()) {
             // println!("{}: {}", name, args);
-            let ident_str: Vec<&str> = ident_ty
+            let ident_str: Vec<String> = ident_ty
+                .replace("::", "") // 防止`::`干扰参数的解析，因为参数解析依赖于`:`
                 .split(",")
                 .map(|s| {
                     let idx = s.find(":");
                     if let Some(idx) = idx {
-                        let ident = s[..idx].trim();
+                        let ident = s[..idx].trim().to_owned();
                         ident
                     } else {
-                        ""
+                        "".to_owned()
                     }
                 })
                 .collect();
